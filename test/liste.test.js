@@ -118,3 +118,26 @@ test('temizle', () => {
   l.temizle();
   assert.equal(new SayimListesi(depo).kayitlar().length, 0);
 });
+
+test('yenidenBaglamaEskiHaricKaldirir', () => {
+  const l = new SayimListesi(sahteDepo());
+  l.ekle('TR00433055', 'elle');
+  l.eskiKupeBagla('TR00433055', 'TR00433011'); // yazım hatası
+  l.eskiKupeBagla('TR00433055', 'TR00433001'); // düzeltme
+  assert.equal(l.ekle('TR00433011', 'elle').durum, 'eklendi');
+  assert.equal(l.ekle('TR00433001', 'elle').durum, 'haric');
+});
+
+test('kayitVarMi', () => {
+  const l = new SayimListesi(sahteDepo());
+  l.ekle('TR00433001', 'elle');
+  assert.equal(l.kayitVarMi('TR00433001'), true);
+  assert.equal(l.kayitVarMi('TR00433002'), false);
+});
+
+test('depoYoksaUyari', () => {
+  const l = new SayimListesi(null);
+  assert.ok(l.sonHata);
+  l.ekle('TR00433001', 'elle');
+  assert.ok(l.sonHata);
+});

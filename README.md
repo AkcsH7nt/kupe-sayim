@@ -5,9 +5,12 @@ Fotoğraf saklanmaz; yalnız küpe numarası (`TR00433001` biçiminde) telefonda
 
 ## Sahada kullanım
 
-1. **İlk açılışı internet varken yap.** Üst köşede **"Çevrimdışı hazır ✓"** görmeden ahıra girme.
-   Tarayıcı menüsünden **Ana ekrana ekle** de; sonra uygulama simgeden açılır.
-2. Kamerayı küpeye 10–15 cm tut, küpeyi **sarı çerçevenin içine** al. Okununca yeşil yanar, telefon titrer ve bip sesi gelir.
+1. **Hazırlık (internet varken, akşamdan):** Adresi telefonda aç. Tarayıcı menüsünden **Ana ekrana ekle** de.
+   Sonra uygulamayı **ana ekrandaki simgeden** aç, kamera iznini ver ve üst köşede **"Çevrimdışı hazır ✓"**
+   görünene kadar bekle. (iPhone'da simgeden açılan uygulama Safari'den ayrı hafıza kullanır; ✓'yi simgede görmek şart.)
+   Sayımı her zaman **simgeden** yap; tarayıcı sekmesinde başlatılan sayım simgede görünmez.
+2. Kamerayı küpeye yaklaşık **20 cm** tut (görüntü netleşene kadar), küpeyi **sarı çerçevenin içine** al.
+   Okununca yeşil yanar, bip sesi gelir (sesin açılması için ekrana bir kez dokunmuş olmak gerekir), Android'de telefon titrer.
 3. Aynı küpenin öbür yüzü okunursa **"zaten okundu"** der, listeye ikinci kez eklemez.
 4. **Aşı yapıldı** düğmesi son okunan hayvana aşı işareti koyar (Liste ekranında da değiştirilebilir).
 5. **Eski küpesi düştü**: yeni küpeyi okuttuktan sonra bas, eski numarayı yaz. Eski numara sayımdan çıkar;
@@ -19,7 +22,7 @@ Fotoğraf saklanmaz; yalnız küpe numarası (`TR00433001` biçiminde) telefonda
 
 ## İlk saha denemesi kontrol listesi
 
-- [ ] Barkod okunuyor mu, yoksa hep rakamdan mı okuyor? (Liste satırındaki kaynak CSV'de yok; gözle izle.)
+- [ ] Barkod okunuyor mu? Okunursa üst satırda **"Barkod içeriği: …"** yazar — ne yazdığını not al (uygulama yalnız tam 8 haneli barkodu kabul eder).
 - [ ] Bir küpenin okunması kaç saniye sürüyor?
 - [ ] Karanlık bölmede fener ile okuyor mu?
 - [ ] Yanlış okunan numara oldu mu? (Hangi rakamlar karıştı — not al.)

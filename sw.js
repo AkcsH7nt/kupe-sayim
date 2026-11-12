@@ -1,6 +1,6 @@
 // Çevrimdışı çalışma: uygulamanın tüm dosyaları (okuma modeli dahil) ilk açılışta telefona kaydedilir.
 // Dosyalardan biri değişince SURUM artırılmalı.
-const SURUM = 'kupe-sayim-v1';
+const SURUM = 'kupe-sayim-v2';
 const DOSYALAR = [
   './', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'ikon.svg', 'ikon-192.png', 'ikon-512.png', 'apple-touch-icon.png',
   'lib/kupe.js', 'lib/liste.js', 'lib/onisleme.js', 'lib/bolutleme.js', 'lib/okuyucu.js',
@@ -10,7 +10,10 @@ const DOSYALAR = [
 ];
 
 self.addEventListener('install', (o) => {
-  o.waitUntil(caches.open(SURUM).then((c) => c.addAll(DOSYALAR)).then(() => self.skipWaiting()));
+  // cache: 'reload' → tarayıcının HTTP önbelleğindeki eski dosyalar yeni sürüme karışmasın.
+  o.waitUntil(caches.open(SURUM)
+    .then((c) => c.addAll(DOSYALAR.map((d) => new Request(d, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (o) => {

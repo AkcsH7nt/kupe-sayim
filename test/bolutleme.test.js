@@ -44,6 +44,13 @@ test('komsuKupeKenariIlKoduSanilmaz', () => {
   assert.deepEqual(s.kucuk, { x0: 230, y0: 30, x1: 253, y1: 47 });
 });
 
+test('ilKoduBirlesikseTRSecilmez', () => {
+  // "00" tek leke olarak kaynaşmış (karakter sayılmaz): sağda tek karakter kalırsa TR'ye kaymamalı.
+  const kaynasmis = [[30, 30, 10, 18], [44, 30, 10, 18], [230, 30, 30, 18, 'dolu']];
+  const s = satirlariBul(goruntu(W, H, [...kaynasmis, ...barkod, ...buyukSatir]), W, H);
+  assert.equal(s.kucuk, null);
+});
+
 test('tersKupeAnlasilir', () => {
   // 180° çevrilmiş düzen: büyük satır üstte, küçük satır altta.
   const cevir = ([x, y, kw, kh, tur]) => [W - x - kw, H - y - kh, kw, kh, tur];

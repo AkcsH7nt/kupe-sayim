@@ -68,6 +68,9 @@ test('dusenKupe', async () => {
   await sayfa.click('#tus-temizle');
   for (const r of '00433001') await sayfa.click(`[data-tus="${r}"]`);
   await sayfa.click('#tus-ekle');
+  // TR00433001 bu sayımda okunmuş bir hayvan: yanlışlıkla silinmesin diye onay sorulur.
+  await sayfa.waitForSelector('#onay[open] >> text=okunmuş bir hayvan');
+  await sayfa.click('#onay-evet');
   await sayfa.click('#sekme-liste');
   assert.equal(await sayfa.locator('#liste li').count(), 1);
   assert.match(await sayfa.textContent('#liste li[data-no="TR00433055"]'), /TR00433001/);
@@ -78,4 +81,16 @@ test('darEkrandaYatayKaydirmaYok', async () => {
     await sayfa.click(sekme);
     assert.ok(await sayfa.evaluate(() => document.documentElement.scrollWidth <= 360), sekme);
   }
+});
+
+test('onayGeriTusuIleKapaninca', async () => {
+  // Geri tuşu (Esc) onayı "hayır" sayar; sonraki onay ve elle giriş takılmadan çalışır.
+  await sayfa.click('#sekme-liste');
+  await sayfa.click('#yeni-sayim');
+  await sayfa.keyboard.press('Escape');
+  assert.equal(await sayfa.locator('#onay[open]').count(), 0);
+  assert.equal(await sayfa.locator('#liste li').count(), 1);
+  await sayfa.click('#sekme-okut');
+  await elleGir('00433077');
+  assert.match(await sayfa.textContent('#bildirim'), /TR00433077 eklendi/);
 });

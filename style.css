@@ -36,6 +36,8 @@ button { font: inherit; color: inherit; }
 #cevrimdisi.hazir { color: var(--yesil); }
 #durum { color: var(--soluk); font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
+.uyari { background: var(--kirmizi); color: #000; font-weight: 700; padding: 10px 16px; }
+
 main { flex: 1; overflow-y: auto; }
 .ekran { display: flex; flex-direction: column; gap: 12px; padding: 12px 16px 16px; }
 .ekran[hidden] { display: none; }

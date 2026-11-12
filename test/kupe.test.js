@@ -6,8 +6,17 @@ test('ikiSatir', () => {
   assert.equal(ocrMetnindenNumara('00\n433001'), 'TR00433001');
 });
 
-test('barkodGurultusu', () => {
-  assert.equal(ocrMetnindenNumara('00\n1111 11\n433001\n'), 'TR00433001');
+test('barkodGurultusuReddedilir', () => {
+  // Yanlış numara kabul etmek en kötü sonuç: fazladan satır varsa okuma reddedilir.
+  assert.equal(ocrMetnindenNumara('00\n1111 11\n433001\n'), null);
+  assert.equal(ocrMetnindenNumara('1111 11\n433001'), null);
+  assert.equal(ocrMetnindenNumara('111111\n433001'), null);
+  assert.equal(ocrMetnindenNumara('433007433001\n100100\n'), null);
+});
+
+test('ayriOkunanTRHarfleri', () => {
+  assert.equal(ocrMetnindenNumara('78 00\n433001'), 'TR00433001');
+  assert.equal(ocrMetnindenNumara('18 0 0\n433001'), 'TR00433001');
 });
 
 test('harfleriRakamSanmaToleransi', () => {
@@ -19,7 +28,7 @@ test('tekSatirBitisik', () => {
 });
 
 test('eksikHaneReddedilir', () => {
-  for (const m of ['00\n43300', '00\n4330011', '433001', '']) {
+  for (const m of ['00\n43300', '00\n4330011', '433001', '', '00\n14330011', '0\n433001']) {
     assert.equal(ocrMetnindenNumara(m), null, m);
   }
 });
@@ -28,6 +37,13 @@ test('barkod', () => {
   assert.equal(barkoddanNumara('TR00433001'), 'TR00433001');
   assert.equal(barkoddanNumara('TR 00 433001'), 'TR00433001');
   assert.equal(barkoddanNumara('12345'), null);
+});
+
+test('barkodTamSekizHaneOlmali', () => {
+  assert.equal(barkoddanNumara('TR004330017'), null);
+  assert.equal(barkoddanNumara('0792004330010'), null);
+  assert.equal(barkoddanNumara('12345678901234'), null);
+  assert.equal(barkoddanNumara('00433001'), 'TR00433001');
 });
 
 test('oylamaRakam', () => {
@@ -62,9 +78,20 @@ test('nullSeriyiBozar', () => {
   assert.equal(o.ekle('A', 'rakam'), null);
 });
 
-test('kabuldenSonraSifirlanir', () => {
+test('kabuldenSonraAyniNumaraTekrarlanmaz', () => {
+  // Küpe görüntüde durdukça aynı numara tekrar tekrar kabul edilmemeli.
   const o = new Oylayici();
   o.ekle('A', 'barkod');
   assert.equal(o.ekle('A', 'barkod'), 'A');
-  assert.equal(o.ekle('A', 'barkod'), null);
+  for (let i = 0; i < 6; i++) assert.equal(o.ekle('A', 'barkod'), null);
+});
+
+test('baskaNumaraYaDaBosKarelerdenSonraTekrarKabul', () => {
+  const o = new Oylayici();
+  o.ekle('A', 'barkod'); o.ekle('A', 'barkod');
+  for (let i = 0; i < 3; i++) o.ekle(null, 'rakam');
+  o.ekle('A', 'barkod');
+  assert.equal(o.ekle('A', 'barkod'), 'A');
+  o.ekle('B', 'barkod');
+  assert.equal(o.ekle('B', 'barkod'), 'B');
 });
