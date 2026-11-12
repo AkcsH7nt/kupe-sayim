@@ -32,6 +32,8 @@ button { font: inherit; color: inherit; }
   background: var(--yuzey);
 }
 #sayac { font-size: 22px; white-space: nowrap; }
+#cevrimdisi { margin-left: auto; font-size: 13px; color: var(--turuncu); white-space: nowrap; }
+#cevrimdisi.hazir { color: var(--yesil); }
 #durum { color: var(--soluk); font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
 main { flex: 1; overflow-y: auto; }

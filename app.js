@@ -255,5 +255,24 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+// ---------- Çevrimdışı ----------
+async function cevrimdisiHazirla() {
+  const gosterge = $('#cevrimdisi');
+  if (!('serviceWorker' in navigator)) { gosterge.textContent = 'Çevrimdışı desteklenmiyor'; return; }
+  try {
+    navigator.serviceWorker.addEventListener('message', (o) => {
+      if (o.data?.hazir) { gosterge.textContent = 'Çevrimdışı hazır ✓'; gosterge.classList.add('hazir'); }
+      else gosterge.textContent = 'İnternet gerekli: hazırlanıyor…';
+    });
+    await navigator.serviceWorker.register('sw.js');
+    const kayit = await navigator.serviceWorker.ready;
+    kayit.active?.postMessage('hazirMi');
+  } catch (e) {
+    gosterge.textContent = 'Çevrimdışı hazırlanamadı';
+    console.warn(e);
+  }
+}
+
 ciz();
 kameraBaslat();
+cevrimdisiHazirla();
