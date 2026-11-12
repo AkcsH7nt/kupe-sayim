@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111111">
+  <title>Küpe Sayım</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="vendor/tesseract.min.js" defer></script>
+  <script src="vendor/zxing-reader.js" defer></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="ust">
+    <strong id="sayac">0 hayvan</strong>
+    <span id="durum" role="status">Açılıyor…</span>
+  </header>
+
+  <main>
+    <section id="ekran-okut" class="ekran">
+      <div class="kamera-alani">
+        <div id="kamera" class="kamera">
+          <video id="video" playsinline muted></video>
+          <div id="cerceve" class="cerceve" aria-hidden="true"></div>
+        </div>
+        <button id="kamera-ac" class="dugme ikincil" hidden>Kamerayı aç</button>
+      </div>
+
+      <div id="son" class="son" hidden>
+        <div class="son-ust">
+          <span class="etiket">Son okunan</span>
+          <span id="son-no" class="son-no"></span>
+        </div>
+        <div class="son-dugmeler">
+          <button id="son-asi" class="dugme">Aşı yapıldı</button>
+          <button id="son-eski" class="dugme ikincil">Eski küpesi düştü</button>
+        </div>
+      </div>
+
+      <div class="alt-dugmeler">
+        <button id="fener" class="dugme ikincil" aria-pressed="false">Fener</button>
+        <button id="elle-yaz" class="dugme ana">Elle yaz</button>
+      </div>
+    </section>
+
+    <section id="ekran-liste" class="ekran" hidden>
+      <ul id="liste" class="liste"></ul>
+      <p id="liste-bos" class="bos">Henüz küpe okunmadı.</p>
+      <div class="liste-dugmeler">
+        <button id="paylas" class="dugme ana">Paylaş</button>
+        <button id="excel" class="dugme ikincil">Excel indir</button>
+        <button id="yeni-sayim" class="dugme tehlike">Yeni sayım</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="sekmeler">
+    <button id="sekme-okut" class="sekme secili" aria-current="page">Okut</button>
+    <button id="sekme-liste" class="sekme">Liste</button>
+  </nav>
+
+  <div id="bildirim" class="bildirim" role="status" aria-live="polite"></div>
+
+  <dialog id="tus-paneli" class="panel">
+    <p id="tus-baslik" class="panel-baslik">Küpe numarası</p>
+    <div class="tus-ekran"><span class="tr">TR</span><span id="tus-deger"></span></div>
+    <div class="tus-takimi">
+      <button data-tus="1">1</button><button data-tus="2">2</button><button data-tus="3">3</button>
+      <button data-tus="4">4</button><button data-tus="5">5</button><button data-tus="6">6</button>
+      <button data-tus="7">7</button><button data-tus="8">8</button><button data-tus="9">9</button>
+      <button id="tus-temizle">Temizle</button><button data-tus="0">0</button><button id="tus-sil" aria-label="Son rakamı sil">⌫</button>
+    </div>
+    <div class="panel-dugmeler">
+      <button id="tus-iptal" class="dugme ikincil">Vazgeç</button>
+      <button id="tus-ekle" class="dugme ana" disabled>Ekle</button>
+    </div>
+  </dialog>
+
+  <dialog id="onay" class="panel">
+    <p id="onay-metin" class="panel-baslik"></p>
+    <div class="panel-dugmeler">
+      <button id="onay-hayir" class="dugme ikincil">Hayır</button>
+      <button id="onay-evet" class="dugme ana">Evet</button>
+    </div>
+  </dialog>
+</body>
+</html>

@@ -38,6 +38,12 @@ test('duzKupeSatirlari', () => {
   assert.deepEqual(s.kucuk, { x0: 230, y0: 30, x1: 253, y1: 47 });
 });
 
+test('komsuKupeKenariIlKoduSanilmaz', () => {
+  // Çerçevenin sağ kenarında komşu küpeden bir parça (büyük satırın yatay hizasının dışında).
+  const s = satirlariBul(goruntu(W, H, [...kucukSatir, ...barkod, ...buyukSatir, [285, 28, 10, 18]]), W, H);
+  assert.deepEqual(s.kucuk, { x0: 230, y0: 30, x1: 253, y1: 47 });
+});
+
 test('tersKupeAnlasilir', () => {
   // 180° çevrilmiş düzen: büyük satır üstte, küçük satır altta.
   const cevir = ([x, y, kw, kh, tur]) => [W - x - kw, H - y - kh, kw, kh, tur];
