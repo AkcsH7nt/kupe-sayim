@@ -1,0 +1,10 @@
+{
+  "name": "kupe-sayim",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "vendor": "node scripts/vendor.mjs",
+    "sunucu": "node scripts/sunucu.mjs"
+  }
+}
