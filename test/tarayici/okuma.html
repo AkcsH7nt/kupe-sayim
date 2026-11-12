@@ -1,0 +1,17 @@
+<!doctype html>
+<meta charset="utf-8">
+<base href="/">
+<title>Okuma testi</title>
+<script src="vendor/tesseract.min.js"></script>
+<script src="vendor/zxing-reader.js"></script>
+<img id="ornek" src="test/tarayici/kupe-ornek.webp" alt="">
+<script type="module">
+  import { Okuyucu } from '/lib/okuyucu.js';
+  const okuyucu = new Okuyucu();
+  window.oku = async (x, y, w, h) => {
+    const img = document.getElementById('ornek');
+    await img.decode();
+    return okuyucu.goruntuOku(img, { x, y, w, h });
+  };
+  window.okuyucu = okuyucu; window.hazir = true;
+</script>
