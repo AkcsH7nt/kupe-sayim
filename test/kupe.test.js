@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ocrMetnindenNumara, barkoddanNumara, Oylayici } from '../lib/kupe.js';
+import { ocrMetnindenNumara, Oylayici } from '../lib/kupe.js';
 
 test('ikiSatir', () => {
   assert.equal(ocrMetnindenNumara('00\n433001'), 'TR00433001');
@@ -39,19 +39,6 @@ test('buyukSatirAltiIleOnHaneArasiOlabilir', () => {
   assert.equal(ocrMetnindenNumara('75\n12345678'), 'TR7512345678');
   assert.equal(ocrMetnindenNumara('75\n0001234567'), 'TR750001234567');
   assert.equal(ocrMetnindenNumara('78 75\n1234567'), 'TR751234567');
-});
-
-test('barkod', () => {
-  assert.equal(barkoddanNumara('TR00433001'), 'TR00433001');
-  assert.equal(barkoddanNumara('TR 00 433001'), 'TR00433001');
-  assert.equal(barkoddanNumara('12345'), null);
-});
-
-test('barkodTamSekizHaneOlmali', () => {
-  assert.equal(barkoddanNumara('TR004330017'), null);
-  assert.equal(barkoddanNumara('0792004330010'), null);
-  assert.equal(barkoddanNumara('12345678901234'), null);
-  assert.equal(barkoddanNumara('00433001'), 'TR00433001');
 });
 
 test('oylamaRakam', () => {

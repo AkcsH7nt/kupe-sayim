@@ -31,8 +31,6 @@ alttaki büyük rakamlar (küpeye göre 6–10 hane), ör. `TR00433001` ya da `T
 
 ## İlk saha denemesi kontrol listesi
 
-- [ ] Barkod içeriği ne? Kameranın altındaki gri tanı satırında **"barkod: …"** diye yazar — bir küpe için hem bunu hem küpenin üstündeki numarayı not al
-      (uygulama şimdilik barkodu yalnız tam 8 haneliyse kullanır; asıl okuma rakamlardan yapılır).
 - [ ] Bir küpenin okunması kaç saniye sürüyor?
 - [ ] Karanlık bölmede fener ile okuyor mu?
 - [ ] 2× ve 3× yakınlaştırmada görüntü net mi, kaç adımdan okuyor?

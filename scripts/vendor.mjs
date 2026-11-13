@@ -13,8 +13,6 @@ const dosyalar = [
   ['tesseract.js-core/tesseract-core-lstm.wasm.js', 'tesseract-core-lstm.wasm.js'],
   // Yalnız LSTM içeren küçük model (2.9 MB); 4.0.0 sürümü eski motoru da taşıdığı için 11 MB.
   ['@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz', 'eng.traineddata.gz'],
-  ['zxing-wasm/dist/iife/reader/index.js', 'zxing-reader.js'],
-  ['zxing-wasm/dist/reader/zxing_reader.wasm', 'zxing_reader.wasm'],
 ];
 
 for (const [kaynak, ad] of dosyalar) {
