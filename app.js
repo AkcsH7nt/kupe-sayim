@@ -305,10 +305,18 @@ $('#sekme-sayimlar').addEventListener('click', () => sekmeSec('sayimlar'));
 const okuyucu = new Okuyucu({
   video: el.video, onNumara: numaraGeldi, onDurum: durum,
   onTani: (metin) => { $('#tani').textContent = metin; },
+  onHedef: hedefGoster,
 });
 
-// Sarı çerçeve kamera kutusunun ortasında durur; okunan bölge tam olarak bu çerçevenin içidir.
+// Küpe görüntünün neresinde olursa olsun aranır; bulununca sarı kutu küpenin üstüne oturur.
+// Küpe bulunamadığında kutu ortada kesikli kılavuz olarak durur (sarı seçilemezse orası okunur).
+function hedefGoster(kutu) {
+  el.cerceve.classList.toggle('bulundu', Boolean(kutu));
+  if (!kutu) { cerceveYerlestir(); return; }
+  Object.assign(el.cerceve.style, { left: `${kutu.x}px`, top: `${kutu.y}px`, width: `${kutu.w}px`, height: `${kutu.h}px` });
+}
 function cerceveYerlestir() {
+  if (el.cerceve.classList.contains('bulundu')) return;
   const W = el.kamera.clientWidth, H = el.kamera.clientHeight;
   if (!W || !H) return;
   const k = cerceveKutusu(W, H);
@@ -343,7 +351,7 @@ el.zoom.addEventListener('click', async (o) => {
   const kat = Number(secilen.dataset.zoom);
   await okuyucu.yakinlastir(kat);
   for (const d of el.zoom.querySelectorAll('[data-zoom]')) d.setAttribute('aria-pressed', String(d === secilen));
-  if (okuyucu.calisiyor) durum(kat > 1 ? `${kat}× yakın – telefonu sabit tutun` : 'Küpeyi çerçeveye getirin');
+  if (okuyucu.calisiyor) durum(kat > 1 ? `${kat}× yakın – telefonu sabit tutun` : 'Küpeyi kameraya gösterin');
 });
 
 el.fener.addEventListener('click', async () => {

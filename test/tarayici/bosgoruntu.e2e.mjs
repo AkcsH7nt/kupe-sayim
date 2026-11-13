@@ -37,7 +37,7 @@ after(async () => {
 
 test('kupeYokkenDugmelerCalisir', async (t) => {
   if (ffmpegYok) return t.skip('ffmpeg yok');
-  await sayfa.waitForSelector('#durum:has-text("Küpeyi çerçeveye getirin")', { timeout: 30000 });
+  await sayfa.waitForSelector('#durum:has-text("Küpeyi kameraya gösterin")', { timeout: 30000 });
   await sayfa.waitForTimeout(1500); // okuma döngüsü dönmeye başlasın
   await sayfa.click('#elle-yaz', { timeout: 5000 });
   await sayfa.waitForSelector('#tus-paneli[open]', { timeout: 5000 });

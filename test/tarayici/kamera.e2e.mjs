@@ -45,7 +45,9 @@ test('okurOnaySorarYanlisDeninceEklemez', async (t) => {
   await onayBekle();
   assert.equal(await sayfa.locator('#liste li').count(), 0, 'onaylanmadan listeye girmez');
   // Tanı satırı: kameranın ne gördüğü ekranda yazar (sahadan ekran görüntüsüyle sorun bulmak için).
-  assert.match(await sayfa.textContent('#tani'), /1280×720 · 1× · bölge \d+×\d+ · tur \d+ · \d+ ms · satır: tamam · okunan: 00\/433002/);
+  assert.match(await sayfa.textContent('#tani'), /1280×720 · 1× · hedef: küpe \d+×\d+ tamam · tur \d+ · \d+ ms · okunan: 00\/433002/);
+  // Bulunan küpenin üstüne sarı kutu oturur.
+  assert.equal(await sayfa.locator('#cerceve.bulundu').count(), 1);
   await sayfa.screenshot({ path: join(tmpdir(), 'kupe-onay-ekran.png') });
   await sayfa.click('#onay-hayir');
   assert.equal(await sayfa.locator('#liste li').count(), 0);

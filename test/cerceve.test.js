@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cerceveKutusu, okumaBolgesi, zoomPlani } from '../lib/cerceve.js';
+import { cerceveKutusu, okumaBolgesi, zoomPlani, gorunenBolge } from '../lib/cerceve.js';
 
 test('cerceveKutusuOrtadaVeYatay', () => {
   const k = cerceveKutusu(400, 300);
@@ -64,4 +64,15 @@ test('zoomPlaniKameraYetmezseKalaniSayisal', () => {
 test('zoomPlaniBaslangicDegerineGore', () => {
   // Kamera 2 ile açıldıysa "2×" = 4.
   assert.deepEqual(zoomPlani(2, { min: 1, max: 10, taban: 2 }), { donanim: 4, sayisal: 1 });
+});
+
+test('gorunenBolgeYatayVideodaYanlarKirpilir', () => {
+  // Kutu 400×300, video 1280×720: ölçek 300/720; ekranda videonun ortadaki 960×720'si görünür.
+  assert.deepEqual(gorunenBolge(1280, 720, 400, 300), { x: 160, y: 0, w: 960, h: 720, olcek: 300 / 720 });
+});
+
+test('gorunenBolgeYakinlastirincaKuculur', () => {
+  const g = gorunenBolge(1280, 720, 400, 300, 2);
+  assert.deepEqual([g.x, g.y, g.w, g.h], [400, 180, 480, 360]);
+  assert.equal(g.olcek, 2 * 300 / 720);
 });

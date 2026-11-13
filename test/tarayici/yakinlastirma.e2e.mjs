@@ -1,4 +1,5 @@
-// Uzaktan okuma: küpe karede küçük (uzakta) durur; 1×'te okunamaz, 2× seçilince okunur.
+// Uzaktaki küpe: karede küçük durur. Uygulama küpeyi kendisi bulup büyüterek okur (düğmeye gerek kalmadan);
+// 2× seçilince ekrandaki görüntü ve küpenin üstündeki kutu iki kat büyür.
 // Sahte kamerada kameranın kendi yakınlaştırması yok; görüntüyü büyütme yolu sınanır. ffmpeg yoksa atlanır.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -35,12 +36,22 @@ after(async () => {
   sunucu?.close();
 });
 
-test('uzaktakiKupeIkiKattaOkunur', async (t) => {
+const kutuGenisligi = () => sayfa.evaluate(() => document.querySelector('#cerceve.bulundu')?.getBoundingClientRect().width ?? 0);
+
+test('uzaktakiKucukKupeKendiligindenOkunur', async (t) => {
   if (ffmpegYok) return t.skip('ffmpeg yok');
-  await sayfa.waitForSelector('#durum:has-text("Küpeyi çerçeveye getirin")', { timeout: 30000 });
-  await sayfa.waitForTimeout(4000);
-  assert.equal(await sayfa.locator('#onay[open]').count(), 0, '1× iken bu uzaklıktan okunmamalı');
+  await sayfa.waitForSelector('#onay[open] #onay-numara:has-text("TR00433002")', { timeout: 60000 });
+  await sayfa.screenshot({ path: join(tmpdir(), 'kupe-uzak-ekran.png') });
+});
+
+test('ikiKattaGoruntuVeKutuIkiKatBuyur', async (t) => {
+  if (ffmpegYok) return t.skip('ffmpeg yok');
+  const once = await kutuGenisligi();
+  assert.ok(once > 20, 'küpe kutusu yok');
+  await sayfa.click('#onay-hayir');
   await sayfa.click('[data-zoom="2"]');
-  await sayfa.waitForSelector('#onay[open] #onay-numara:has-text("TR00433002")', { timeout: 30000 });
-  await sayfa.screenshot({ path: join(tmpdir(), 'kupe-yakin-ekran.png') });
+  await sayfa.waitForFunction((w) => (document.querySelector('#cerceve.bulundu')?.getBoundingClientRect().width ?? 0) > w * 1.5, once, { timeout: 15000 });
+  await sayfa.waitForTimeout(400); // kutunun geçiş hareketi bitsin
+  const oran = (await kutuGenisligi()) / once;
+  assert.ok(oran > 1.7 && oran < 2.3, `oran ${oran}`);
 });
