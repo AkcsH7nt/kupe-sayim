@@ -1,6 +1,6 @@
 // Çevrimdışı çalışma: uygulamanın tüm dosyaları (okuma modeli dahil) ilk açılışta telefona kaydedilir.
 // Dosyalardan biri değişince SURUM artırılmalı.
-const SURUM = 'kupe-sayim-v2';
+const SURUM = 'kupe-sayim-v3';
 const DOSYALAR = [
   './', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'ikon.svg', 'ikon-192.png', 'ikon-512.png', 'apple-touch-icon.png',
   'lib/kupe.js', 'lib/liste.js', 'lib/onisleme.js', 'lib/bolutleme.js', 'lib/okuyucu.js',
@@ -39,6 +39,6 @@ self.addEventListener('message', (o) => {
   o.waitUntil((async () => {
     const onbellek = await caches.open(SURUM);
     const eksik = (await Promise.all(DOSYALAR.map((d) => onbellek.match(d)))).filter((r) => !r).length;
-    o.source.postMessage({ hazir: eksik === 0, eksik });
+    o.source.postMessage({ hazir: eksik === 0, eksik, surum: SURUM.split('-v')[1] });
   })());
 });

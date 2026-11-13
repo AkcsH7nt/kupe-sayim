@@ -293,9 +293,12 @@ async function cevrimdisiHazirla() {
   if (!('serviceWorker' in navigator)) { gosterge.textContent = 'Çevrimdışı desteklenmiyor'; return; }
   try {
     navigator.serviceWorker.addEventListener('message', (o) => {
-      if (o.data?.hazir) { gosterge.textContent = 'Çevrimdışı hazır ✓'; gosterge.classList.add('hazir'); }
+      if (o.data?.hazir) { gosterge.textContent = `Çevrimdışı hazır ✓ · s${o.data.surum}`; gosterge.classList.add('hazir'); }
       else gosterge.textContent = 'İnternet gerekli: hazırlanıyor…';
     });
+    // Yeni sürüm devraldığında sayfayı bir kez yenile (liste telefonda kayıtlı, kaybolmaz).
+    const oncekiSurumVar = Boolean(navigator.serviceWorker.controller);
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (oncekiSurumVar) location.reload(); });
     await navigator.serviceWorker.register('sw.js');
     const kayit = await navigator.serviceWorker.ready;
     kayit.active?.postMessage('hazirMi');
