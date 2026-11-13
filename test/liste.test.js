@@ -196,6 +196,32 @@ test('saflarDiziyleCalisir', () => {
   assert.deepEqual(ozet(k), { toplam: 2, asi: 1, dusen: 1 });
 });
 
+test('benzeriniBulIlKoduOkunamayanKupe', () => {
+  // İl kodu okunamadan kaydedilen küpe, sonradan il koduyla okununca (ya da tersi) aynı hayvandır.
+  const depo = sahteDepo();
+  const l = new SayimListesi(depo);
+  l.ekle('TR433002', 'rakam', { ilsiz: true });
+  assert.equal(l.benzeriniBul('433002'), 'TR433002');
+  assert.equal(l.benzeriniBul('433002', '75'), 'TR433002');
+  assert.equal(l.benzeriniBul('433003'), null);
+  assert.equal(new SayimListesi(depo).benzeriniBul('433002', '00'), 'TR433002'); // işaret kalıcı
+});
+
+test('benzeriniBulIlKoduBilinenKupe', () => {
+  const l = new SayimListesi(sahteDepo());
+  l.ekle('TR00433002', 'rakam');
+  assert.equal(l.benzeriniBul('433002'), 'TR00433002');       // il kodu okunamayan yeni okuma
+  assert.equal(l.benzeriniBul('433002', '00'), 'TR00433002'); // aynı küpe
+  assert.equal(l.benzeriniBul('433002', '75'), null);         // başka ilin aynı sıra numaralı hayvanı
+});
+
+test('benzeriniBulHaneSayisiFarkliysaAyri', () => {
+  const l = new SayimListesi(sahteDepo());
+  l.ekle('TR1234567', 'rakam', { ilsiz: true });
+  assert.equal(l.benzeriniBul('234567'), null);
+  assert.equal(l.benzeriniBul('34567'), null);
+});
+
 test('kaliciDepolama', () => {
   const depo = sahteDepo();
   const l = new SayimListesi(depo);

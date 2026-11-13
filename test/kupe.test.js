@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ocrMetnindenNumara, Oylayici } from '../lib/kupe.js';
+import { ocrMetnindenNumara } from '../lib/kupe.js';
 
 test('ikiSatir', () => {
   assert.equal(ocrMetnindenNumara('00\n433001'), 'TR00433001');
@@ -39,54 +39,4 @@ test('buyukSatirAltiIleOnHaneArasiOlabilir', () => {
   assert.equal(ocrMetnindenNumara('75\n12345678'), 'TR7512345678');
   assert.equal(ocrMetnindenNumara('75\n0001234567'), 'TR750001234567');
   assert.equal(ocrMetnindenNumara('78 75\n1234567'), 'TR751234567');
-});
-
-test('oylamaRakam', () => {
-  const o = new Oylayici();
-  assert.equal(o.ekle('TR00433001', 'rakam'), null);
-  assert.equal(o.ekle('TR00433001', 'rakam'), null);
-  assert.equal(o.ekle('TR00433001', 'rakam'), 'TR00433001');
-});
-
-test('oylamaSeriBozulur', () => {
-  const o = new Oylayici();
-  for (const n of ['A', 'A', 'B', 'A']) assert.equal(o.ekle(n, 'rakam'), null);
-});
-
-test('oylamaBarkod', () => {
-  const o = new Oylayici();
-  assert.equal(o.ekle('TR00433001', 'barkod'), null);
-  assert.equal(o.ekle('TR00433001', 'barkod'), 'TR00433001');
-});
-
-test('capraz', () => {
-  const o = new Oylayici();
-  assert.equal(o.ekle('TR00433001', 'rakam'), null);
-  assert.equal(o.ekle('TR00433001', 'barkod'), 'TR00433001');
-});
-
-test('nullSeriyiBozar', () => {
-  const o = new Oylayici();
-  assert.equal(o.ekle('A', 'rakam'), null);
-  assert.equal(o.ekle(null, 'rakam'), null);
-  assert.equal(o.ekle('A', 'rakam'), null);
-  assert.equal(o.ekle('A', 'rakam'), null);
-});
-
-test('kabuldenSonraAyniNumaraTekrarlanmaz', () => {
-  // Küpe görüntüde durdukça aynı numara tekrar tekrar kabul edilmemeli.
-  const o = new Oylayici();
-  o.ekle('A', 'barkod');
-  assert.equal(o.ekle('A', 'barkod'), 'A');
-  for (let i = 0; i < 6; i++) assert.equal(o.ekle('A', 'barkod'), null);
-});
-
-test('baskaNumaraYaDaBosKarelerdenSonraTekrarKabul', () => {
-  const o = new Oylayici();
-  o.ekle('A', 'barkod'); o.ekle('A', 'barkod');
-  for (let i = 0; i < 3; i++) o.ekle(null, 'rakam');
-  o.ekle('A', 'barkod');
-  assert.equal(o.ekle('A', 'barkod'), 'A');
-  o.ekle('B', 'barkod');
-  assert.equal(o.ekle('B', 'barkod'), 'B');
 });

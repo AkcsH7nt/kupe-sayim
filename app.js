@@ -17,6 +17,7 @@ const el = {
   bildirim: $('#bildirim'), tusPaneli: $('#tus-paneli'), tusDeger: $('#tus-deger'), tusEkle: $('#tus-ekle'),
   onay: $('#onay'), onayMetin: $('#onay-metin'), onayNumara: $('#onay-numara'), onayIl: $('#onay-il'),
   onaySira: $('#onay-sira'), onayNot: $('#onay-not'), onayEvet: $('#onay-evet'), onayHayir: $('#onay-hayir'),
+  onayEk: $('#onay-ek'),
 };
 
 const iki = (n) => String(n).padStart(2, '0');
@@ -106,29 +107,52 @@ el.liste.addEventListener('click', async (o) => {
 });
 
 // ---------- Numara geldiğinde ----------
-async function numaraGeldi(no, kaynak) {
-  const onceki = liste.bak(no);
-  if (onceki === 'zaten') {
-    bip(700, 0.06); titre([60, 60, 60]);
-    bildir(`${no} zaten okundu`, 'uyari');
-    vurgulanan = no; ciz();
-    return;
-  }
-  if (onceki === 'haric') {
+// Son bilinen il kodu (il kodu okunamayan küpede tek dokunuşla eklemek ve elle yazmayı kısaltmak için).
+const IL_ANAHTARI = 'kupe-sayim-il';
+const sonIl = () => { try { return /^\d{2}$/.test(depo?.getItem(IL_ANAHTARI) ?? '') ? depo.getItem(IL_ANAHTARI) : null; } catch { return null; } };
+const sonIlKaydet = (il) => { try { depo?.setItem(IL_ANAHTARI, il); } catch { /* kaydedilemezse önemli değil */ } };
+
+function zatenOkundu(no) {
+  bip(700, 0.06); titre([60, 60, 60]);
+  bildir(`${no} zaten okundu`, 'uyari');
+  vurgulanan = no; ciz();
+}
+
+/** ek.ilYok: kamera büyük rakamları okudu ama il kodunu bulamadı; no yalnız "TR" + büyük rakamlar. */
+async function numaraGeldi(no, kaynak, ek = {}) {
+  let ilsiz = Boolean(ek.ilYok);
+  if (liste.bak(no) === 'haric') {
     bip(300, 0.25); titre([200, 80, 200]);
     bildir(`${no}: düşen küpe – sayılmaz`, 'hata');
     return;
   }
+  // Aynı hayvan mı? Kamerada il kodu bir okunup bir okunmayabilir; büyük rakamlar aynıysa aynı küpedir.
+  const sira = ilsiz ? no.slice(2) : no.slice(4);
+  const mevcut = kaynak === 'elle' ? (liste.kayitVarMi(no) ? no : null) : liste.benzeriniBul(sira, ilsiz ? null : no.slice(2, 4));
+  if (mevcut) { zatenOkundu(mevcut); return; }
+
   // Kameranın okuduğu her küpe önce sorulur; Doğru denmeden listeye girmez.
   if (kaynak !== 'elle') {
     bip(); titre(80);
-    const not = liste.supheliMi(no) ? 'Önceki küpelere benzemiyor – dikkatli bakın.' : null;
-    if (!(await onayla('Okunan küpe – doğru mu?', { numara: no, not, evet: 'Doğru', hayir: 'Yanlış' }))) {
+    const il = ilsiz ? sonIl() : null;
+    let not = null;
+    if (ilsiz) not = 'İl kodu okunamadı.' + (il ? '' : ' Eksikse Yanlış deyip Elle yazın.');
+    else if (liste.supheliMi(no)) not = 'Önceki küpelere benzemiyor – dikkatli bakın.';
+    const cevap = await onayla('Okunan küpe – doğru mu?', {
+      numara: no, ilsiz, not, evet: 'Doğru', hayir: 'Yanlış', ek: il ? `Başına ${il} ekle` : null,
+    });
+    if (!cevap) {
       bildir('Atıldı. Tekrar okutun ya da Elle yaz.', 'uyari');
       return;
     }
+    if (cevap === 'ek') {
+      no = 'TR' + il + sira;
+      ilsiz = false;
+      if (liste.kayitVarMi(no)) { zatenOkundu(no); return; }
+    }
   }
-  if (liste.ekle(no, kaynak).durum === 'eklendi') {
+  if (liste.ekle(no, kaynak, { ilsiz }).durum === 'eklendi') {
+    if (!ilsiz) sonIlKaydet(no.slice(2, 4));
     if (kaynak === 'elle') bip();
     titre(40);
     el.kamera.classList.add('okundu');
@@ -152,19 +176,27 @@ let onayCevabi = null, onayKilidi;
  * Okuma onayı kendiliğinden (kullanıcı başka bir yere dokunurken) açılabildiği için düğmeleri
  * ilk anda kilitlidir; yanlışlıkla "Doğru"ya basılmasın.
  */
-function onayla(metin, { numara = null, not = null, evet = 'Evet', hayir = 'Hayır' } = {}) {
+function onayla(metin, { numara = null, ilsiz = false, not = null, evet = 'Evet', hayir = 'Hayır', ek = null } = {}) {
   onayCevabi?.(false); // açık bir soru varsa "hayır" sayılır
   el.onayMetin.textContent = metin;
   el.onayNumara.hidden = !numara;
-  if (numara) { el.onayIl.textContent = numara.slice(2, 4); el.onaySira.textContent = numara.slice(4); }
+  if (numara) {
+    // İl kodu okunamadıysa numara yalnız "TR" + büyük rakamlardır.
+    el.onayIl.textContent = ilsiz ? '' : numara.slice(2, 4);
+    el.onaySira.textContent = numara.slice(ilsiz ? 2 : 4);
+  }
   el.onayNot.hidden = !not;
   el.onayNot.textContent = not ?? '';
   el.onayEvet.textContent = evet;
   el.onayHayir.textContent = hayir;
+  // Üçüncü seçenek (örn. "Başına 75 ekle"): seçilirse cevap 'ek' olur.
+  el.onayEk.hidden = !ek;
+  el.onayEk.textContent = ek ?? '';
   el.onay.classList.toggle('okuma', Boolean(numara));
   clearTimeout(onayKilidi);
-  el.onayEvet.disabled = el.onayHayir.disabled = Boolean(numara);
-  if (numara) onayKilidi = setTimeout(() => { el.onayEvet.disabled = el.onayHayir.disabled = false; }, 400);
+  const kilit = (acik) => { el.onayEvet.disabled = el.onayHayir.disabled = el.onayEk.disabled = acik; };
+  kilit(Boolean(numara));
+  if (numara) onayKilidi = setTimeout(() => kilit(false), 400);
   if (!el.onay.open) el.onay.showModal();
   okumaDurumu();
   return new Promise((coz) => { onayCevabi = coz; });
@@ -178,6 +210,7 @@ function onayBitir(cevap) {
 }
 el.onayEvet.addEventListener('click', () => onayBitir(true));
 el.onayHayir.addEventListener('click', () => onayBitir(false));
+el.onayEk.addEventListener('click', () => onayBitir('ek'));
 // Geri tuşu / Esc ile kapanırsa "hayır" sayılır ve okuma takılı kalmaz.
 // (Pencere o arada yeni bir soruyla yeniden açıldıysa eski kapanış onu etkilemez.)
 el.onay.addEventListener('close', () => { if (!el.onay.open) onayBitir(false); });
@@ -185,9 +218,8 @@ el.onay.addEventListener('close', () => { if (!el.onay.open) onayBitir(false); }
 // ---------- Tuş takımı (elle yazma) ----------
 let tusRakamlar = '';
 function tusPaneliAc() {
-  // Kolaylık: il kodu son okunan küpeden doldurulur; kullanıcı yalnız 6 haneyi yazar.
-  const ornek = liste.yenidenEskiye()[0]?.no;
-  tusRakamlar = ornek ? ornek.slice(2, 4) : '';
+  // Kolaylık: son bilinen il kodu doldurulur; kullanıcı yalnız büyük rakamları yazar.
+  tusRakamlar = sonIl() ?? '';
   tusGoster();
   el.tusPaneli.showModal();
   okumaDurumu();

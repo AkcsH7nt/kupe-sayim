@@ -14,6 +14,10 @@ alttaki büyük rakamlar (küpeye göre 6–10 hane), ör. `TR00433001` ya da `T
    olursa olsun kendisi bulur**, üstüne sarı kutu çizer ve okur (küpenin tamamı görünmeli; kenarda kesilen küpe okunmaz).
    Sarı seçilemezse (çok kirli küpe, kötü ışık) küpeyi ortadaki kesikli kılavuza getir.
    Okuyunca bip sesi gelir ve ekranın altında **"Okunan küpe – doğru mu?"** diye numarayı sorar.
+   Barkod okunmaz; yalnız rakamlar okunur. Küpelerin düzeni farklı olabildiği için uygulama **büyük rakamları**
+   (6–10 hane) her düzende okur; **il kodunu** bulabilirse başına ekler. Bulamazsa "İl kodu okunamadı" yazar ve
+   numarayı il kodsuz sorar: **Başına 75 ekle** (son bilinen il kodu, tek dokunuş), **Doğru** (il kodsuz kaydet)
+   ya da **Yanlış**. Küpe sarı görünmese de rakam satırı görüntüde seçiliyorsa okunur.
    - **Doğru** → küpe kameranın altındaki listeye düşer (en son okunan en üstte).
    - **Yanlış** → atılır; küpeyi çerçeveden çıkarıp yeniden okut ya da **Elle yaz**.
    (Sesin açılması için ekrana bir kez dokunmuş olmak gerekir.)

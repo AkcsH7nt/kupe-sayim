@@ -45,7 +45,9 @@ test('birinciKupeTersYuz', async () => {
 });
 
 test('sekizParcaninHepsi', async () => {
-  const sutunlar = [[70, 'TR00433001'], [295, 'TR00433001'], [515, 'TR00433002'], [735, 'TR00433002']];
+  // Son sütun 745'ten başlar: 735'te komşu küpenin son rakamı bölgenin kenarında yarım kalıyor ve
+  // okuyucu bunu (bilerek) "kenarda kesik" sayıp okumuyor.
+  const sutunlar = [[70, 'TR00433001'], [295, 'TR00433001'], [515, 'TR00433002'], [745, 'TR00433002']];
   const sonuc = [];
   for (const [x, beklenen] of sutunlar) {
     for (const y of [405, 565]) sonuc.push([x, y, (await oku(x, y, 210, 160)).rakam, beklenen]);
