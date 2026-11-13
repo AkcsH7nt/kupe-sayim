@@ -28,9 +28,17 @@ test('tekSatirBitisik', () => {
 });
 
 test('eksikHaneReddedilir', () => {
-  for (const m of ['00\n43300', '00\n4330011', '433001', '', '00\n14330011', '0\n433001']) {
+  for (const m of ['00\n43300', '433001', '', '0\n433001', '00\n12345678901']) {
     assert.equal(ocrMetnindenNumara(m), null, m);
   }
+});
+
+test('buyukSatirAltiIleOnHaneArasiOlabilir', () => {
+  // Sahadaki küpeler karışık: büyük satır 6, 7 ya da daha fazla haneli olabiliyor.
+  assert.equal(ocrMetnindenNumara('75\n1234567'), 'TR751234567');
+  assert.equal(ocrMetnindenNumara('75\n12345678'), 'TR7512345678');
+  assert.equal(ocrMetnindenNumara('75\n0001234567'), 'TR750001234567');
+  assert.equal(ocrMetnindenNumara('78 75\n1234567'), 'TR751234567');
 });
 
 test('barkod', () => {

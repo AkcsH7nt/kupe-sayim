@@ -140,3 +140,11 @@ test('kayitliSayimSil', async () => {
   assert.equal(await sayfa.locator('#sayimlar > li').count(), 0);
   assert.ok(await sayfa.isVisible('#sayimlar-bos'));
 });
+
+test('yediHaneliKupeElleGirilir', async () => {
+  // Sahadaki küpeler karışık: büyük rakamlar 6 da olabilir 7 de.
+  await sayfa.click('#sekme-okut');
+  await elleGir('751234567');
+  assert.ok(await sayfa.isVisible(satir('TR751234567')));
+  assert.match(await sayfa.textContent('#sayac'), /1 hayvan/);
+});

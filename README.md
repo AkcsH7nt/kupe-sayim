@@ -1,7 +1,8 @@
 # Küpe Sayım
 
 Sarı kulak küpesini telefon kamerasıyla okuyup sayım listesi çıkaran, internetsiz çalışan web uygulaması.
-Fotoğraf saklanmaz; yalnız küpe numarası (`TR00433001` biçiminde) telefonda kaydedilir.
+Fotoğraf saklanmaz; yalnız küpe numarası telefonda kaydedilir. Numara = `TR` + üstteki küçük 2 hane (il kodu) +
+alttaki büyük rakamlar (küpeye göre 6–10 hane), ör. `TR00433001` ya da `TR751234567`.
 
 ## Sahada kullanım
 
@@ -22,7 +23,7 @@ Fotoğraf saklanmaz; yalnız küpe numarası (`TR00433001` biçiminde) telefonda
 4. Listede her küpenin sağında sütunlar vardır: **Aşı** ve **Düştü** (küpesi düşmüş, yenisi takılmış).
    Gerekirse dokun, işaretlenir; tekrar dokununca kalkar. İşaretlemek zorunlu değil. **✕** satırı siler (önce sorar).
 5. Aynı küpenin öbür yüzü okunursa **"zaten okundu"** der, sormaz ve listeye ikinci kez eklemez.
-6. Okunmayan küpe için **Elle yaz**: il kodu (ilk 2 hane) son okunan küpeden doldurulur, 6 haneyi yaz.
+6. Okunmayan küpe için **Elle yaz**: il kodu (ilk 2 hane) son okunan küpeden doldurulur, büyük rakamları yaz.
 7. Karanlıkta **Fener** (iPhone'da çalışmayabilir).
 8. Sayım bitince **Kaydet**: sayım tarih ve saatiyle telefonda saklanır, liste yeni sayım için boşalır.
 9. **Sayımlar** sekmesinde kaydedilen sayımlar durur: **Paylaş** (WhatsApp vb.), **Excel** indir, numaraları göster, **Sil**.
@@ -30,7 +31,8 @@ Fotoğraf saklanmaz; yalnız küpe numarası (`TR00433001` biçiminde) telefonda
 
 ## İlk saha denemesi kontrol listesi
 
-- [ ] Barkod okunuyor mu? Okunursa üst satırda **"Barkod içeriği: …"** yazar — ne yazdığını not al (uygulama yalnız tam 8 haneli barkodu kabul eder).
+- [ ] Barkod içeriği ne? Kameranın altındaki gri tanı satırında **"barkod: …"** diye yazar — bir küpe için hem bunu hem küpenin üstündeki numarayı not al
+      (uygulama şimdilik barkodu yalnız tam 8 haneliyse kullanır; asıl okuma rakamlardan yapılır).
 - [ ] Bir küpenin okunması kaç saniye sürüyor?
 - [ ] Karanlık bölmede fener ile okuyor mu?
 - [ ] 2× ve 3× yakınlaştırmada görüntü net mi, kaç adımdan okuyor?

@@ -42,6 +42,25 @@ test('uzerindeYaziOlanKupeTekParcaBulunur', () => {
   assert.deepEqual([a[0].x0, a[0].x1], [50, 99]);
 });
 
+test('koyuBantlaBolunenKupeTekKutuOlur', () => {
+  // Sahada görülen hata: barkod/gölge küpeyi ikiye bölünce kutu yalnız barkodlu üst parçayı alıyordu.
+  const a = kupeAdaylari(resim(160, 120, [[50, 30, 99, 79, SARI], [50, 48, 99, 52, [25, 25, 25]]]), 160, 120);
+  assert.equal(a.length, 1);
+  assert.deepEqual([a[0].x0, a[0].y0, a[0].x1, a[0].y1], [50, 30, 99, 79]);
+});
+
+test('yanYanaBolunenKupeTekKutuOlur', () => {
+  const a = kupeAdaylari(resim(160, 120, [[40, 30, 109, 79, SARI], [72, 30, 75, 79, [25, 25, 25]]]), 160, 120);
+  assert.equal(a.length, 1);
+  assert.deepEqual([a[0].x0, a[0].x1], [40, 109]);
+});
+
+test('caprazDuranSarilarBirlesmez', () => {
+  // Biri diğerinin ne altında ne yanında: ayrı nesneler.
+  const a = kupeAdaylari(resim(160, 120, [[20, 15, 59, 44, SARI], [62, 47, 101, 76, SARI]]), 160, 120);
+  assert.equal(a.length, 2);
+});
+
 test('kenaraDegenKupeAlinmaz', () => {
   // Görüntünün kenarında kesilen küpenin rakamı eksik okunabilir; tamamı görünene dek beklenir.
   assert.equal(kupeAdaylari(resim(160, 120, [[0, 30, 49, 69, SARI]]), 160, 120).length, 0);

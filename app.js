@@ -3,6 +3,7 @@
 import { SayimListesi, SayimArsivi, dusmusMu, ozet, csvMetni, paylasimMetni } from './lib/liste.js';
 import { Okuyucu } from './lib/okuyucu.js';
 import { cerceveKutusu } from './lib/cerceve.js';
+import { SIRA_EN_AZ, SIRA_EN_COK } from './lib/kupe.js';
 
 const $ = (s) => document.querySelector(s);
 const depo = (() => { try { return window.localStorage; } catch { return null; } })();
@@ -193,11 +194,12 @@ function tusPaneliAc() {
 }
 function tusGoster() {
   el.tusDeger.textContent = (tusRakamlar.slice(0, 2) + ' ' + tusRakamlar.slice(2)).trim() || '—';
-  el.tusEkle.disabled = tusRakamlar.length !== 8;
+  // İl kodu (2 hane) + büyük rakamlar (küpeye göre 6–10 hane).
+  el.tusEkle.disabled = tusRakamlar.length < 2 + SIRA_EN_AZ;
 }
 el.tusPaneli.addEventListener('click', (o) => {
   const tus = o.target.closest('[data-tus]');
-  if (tus && tusRakamlar.length < 8) { tusRakamlar += tus.dataset.tus; tusGoster(); }
+  if (tus && tusRakamlar.length < 2 + SIRA_EN_COK) { tusRakamlar += tus.dataset.tus; tusGoster(); }
 });
 $('#tus-sil').addEventListener('click', () => { tusRakamlar = tusRakamlar.slice(0, -1); tusGoster(); });
 $('#tus-temizle').addEventListener('click', () => { tusRakamlar = ''; tusGoster(); });
