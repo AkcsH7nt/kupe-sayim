@@ -44,6 +44,8 @@ test('okurOnaySorarYanlisDeninceEklemez', async (t) => {
   if (ffmpegYok) return t.skip('ffmpeg yok');
   await onayBekle();
   assert.equal(await sayfa.locator('#liste li').count(), 0, 'onaylanmadan listeye girmez');
+  // Tanı satırı: kameranın ne gördüğü ekranda yazar (sahadan ekran görüntüsüyle sorun bulmak için).
+  assert.match(await sayfa.textContent('#tani'), /1280×720 · 1× · bölge \d+×\d+ · tur \d+ · \d+ ms · satır: tamam · okunan: 00\/433002/);
   await sayfa.screenshot({ path: join(tmpdir(), 'kupe-onay-ekran.png') });
   await sayfa.click('#onay-hayir');
   assert.equal(await sayfa.locator('#liste li').count(), 0);

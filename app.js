@@ -52,6 +52,10 @@ function bildir(metin, tur = 'basari') {
 
 function durum(metin) { el.durum.textContent = metin; }
 
+// Beklenmeyen bir hata sessizce kalmasın; üst satırda görünsün.
+window.addEventListener('error', (o) => durum('Hata: ' + (o.message || o.error)));
+window.addEventListener('unhandledrejection', (o) => durum('Hata: ' + (o.reason?.message ?? o.reason)));
+
 // ---------- Kameranın altındaki liste ----------
 let vurgulanan = null; // bir sonraki çizimde yeşil yanıp sönecek satır
 
@@ -298,7 +302,10 @@ $('#sekme-okut').addEventListener('click', () => sekmeSec('okut'));
 $('#sekme-sayimlar').addEventListener('click', () => sekmeSec('sayimlar'));
 
 // ---------- Kamera ----------
-const okuyucu = new Okuyucu({ video: el.video, onNumara: numaraGeldi, onDurum: durum });
+const okuyucu = new Okuyucu({
+  video: el.video, onNumara: numaraGeldi, onDurum: durum,
+  onTani: (metin) => { $('#tani').textContent = metin; },
+});
 
 // Sarı çerçeve kamera kutusunun ortasında durur; okunan bölge tam olarak bu çerçevenin içidir.
 function cerceveYerlestir() {
