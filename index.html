@@ -24,45 +24,38 @@
 
   <main>
     <section id="ekran-okut" class="ekran">
-      <div class="kamera-alani">
-        <div id="kamera" class="kamera">
-          <video id="video" playsinline muted></video>
-          <div id="cerceve" class="cerceve" aria-hidden="true"></div>
-        </div>
-        <button id="kamera-ac" class="dugme ikincil" hidden>Kamerayı aç</button>
-      </div>
-
-      <div id="son" class="son" hidden>
-        <div class="son-ust">
-          <span class="etiket">Son okunan</span>
-          <span id="son-no" class="son-no"></span>
-        </div>
-        <div class="son-dugmeler">
-          <button id="son-asi" class="dugme">Aşı yapıldı</button>
-          <button id="son-eski" class="dugme ikincil">Eski küpesi düştü</button>
+      <div id="kamera" class="kamera">
+        <video id="video" playsinline muted></video>
+        <div id="cerceve" class="cerceve" aria-hidden="true"></div>
+        <button id="kamera-ac" class="dugme ikincil kamera-ac" hidden>Kamerayı aç</button>
+        <div class="kamera-alt">
+          <div id="zoom" class="zoom" role="group" aria-label="Yakınlaştırma">
+            <button data-zoom="1" aria-pressed="true">1×</button>
+            <button data-zoom="2" aria-pressed="false">2×</button>
+            <button data-zoom="3" aria-pressed="false">3×</button>
+          </div>
+          <button id="fener" class="fener" aria-pressed="false">Fener</button>
         </div>
       </div>
 
       <div class="alt-dugmeler">
-        <button id="fener" class="dugme ikincil" aria-pressed="false">Fener</button>
-        <button id="elle-yaz" class="dugme ana">Elle yaz</button>
+        <button id="elle-yaz" class="dugme ikincil">Elle yaz</button>
+        <button id="kaydet" class="dugme ana" disabled>Kaydet</button>
       </div>
+
+      <ul id="liste" class="liste" aria-label="Okunan küpeler"></ul>
+      <p id="liste-bos" class="bos">Küpeyi sarı çerçeveye getirin. Onayladığınız küpeler burada birikir.</p>
     </section>
 
-    <section id="ekran-liste" class="ekran" hidden>
-      <ul id="liste" class="liste"></ul>
-      <p id="liste-bos" class="bos">Henüz küpe okunmadı.</p>
-      <div class="liste-dugmeler">
-        <button id="paylas" class="dugme ana">Paylaş</button>
-        <button id="excel" class="dugme ikincil">Excel indir</button>
-        <button id="yeni-sayim" class="dugme tehlike">Yeni sayım</button>
-      </div>
+    <section id="ekran-sayimlar" class="ekran" hidden>
+      <ul id="sayimlar" class="sayimlar"></ul>
+      <p id="sayimlar-bos" class="bos">Henüz kaydedilmiş sayım yok. Okut ekranında Kaydet'e basınca sayım burada saklanır.</p>
     </section>
   </main>
 
   <nav class="sekmeler">
     <button id="sekme-okut" class="sekme secili" aria-current="page">Okut</button>
-    <button id="sekme-liste" class="sekme">Liste</button>
+    <button id="sekme-sayimlar" class="sekme">Sayımlar</button>
   </nav>
 
   <div id="bildirim" class="bildirim" role="status" aria-live="polite"></div>
@@ -84,6 +77,8 @@
 
   <dialog id="onay" class="panel">
     <p id="onay-metin" class="panel-baslik"></p>
+    <p id="onay-numara" class="onay-numara" hidden><span class="tr">TR</span><span id="onay-il"></span><span id="onay-sira"></span></p>
+    <p id="onay-not" class="onay-not" hidden></p>
     <div class="panel-dugmeler">
       <button id="onay-hayir" class="dugme ikincil">Hayır</button>
       <button id="onay-evet" class="dugme ana">Evet</button>

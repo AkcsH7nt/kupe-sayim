@@ -1,9 +1,9 @@
 // Çevrimdışı çalışma: uygulamanın tüm dosyaları (okuma modeli dahil) ilk açılışta telefona kaydedilir.
 // Dosyalardan biri değişince SURUM artırılmalı.
-const SURUM = 'kupe-sayim-v3';
+const SURUM = 'kupe-sayim-v4';
 const DOSYALAR = [
   './', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'ikon.svg', 'ikon-192.png', 'ikon-512.png', 'apple-touch-icon.png',
-  'lib/kupe.js', 'lib/liste.js', 'lib/onisleme.js', 'lib/bolutleme.js', 'lib/okuyucu.js',
+  'lib/kupe.js', 'lib/liste.js', 'lib/onisleme.js', 'lib/bolutleme.js', 'lib/okuyucu.js', 'lib/cerceve.js',
   'vendor/tesseract.min.js', 'vendor/worker.min.js',
   'vendor/tesseract-core-simd-lstm.wasm.js', 'vendor/tesseract-core-lstm.wasm.js',
   'vendor/eng.traineddata.gz', 'vendor/zxing-reader.js', 'vendor/zxing_reader.wasm',

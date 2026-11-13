@@ -1,4 +1,5 @@
-// Arayüz testi: kamera izni yok, elle giriş, tekrar uyarısı, aşı, kalıcılık, Excel, dar ekran.
+// Arayüz testi (kamera izni yok): elle giriş, kameranın altındaki liste, aşı/düştü sütunları,
+// kalıcılık, silme onayı, yakınlaştırma düğmeleri, Kaydet ve kayıtlı sayımlar, dar ekran.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -28,69 +29,114 @@ const elleGir = async (rakamlar) => {
   for (const r of rakamlar) await sayfa.click(`[data-tus="${r}"]`);
   await sayfa.click('#tus-ekle');
 };
+const satir = (no) => `#liste li[data-no="${no}"]`;
+const basili = (secici) => sayfa.getAttribute(secici, 'aria-pressed');
 
 test('kameraYoksaUyariVeElleGirisCalisir', async () => {
   await sayfa.waitForSelector('#durum:has-text("Kamera açılamadı")', { timeout: 30000 });
   await elleGir('00433001');
-  await sayfa.click('#sekme-liste');
-  assert.equal(await sayfa.locator('#liste li[data-no="TR00433001"]').count(), 1);
+  // Liste kameranın altında, aynı ekranda: sekme değiştirmeden görünür.
+  assert.ok(await sayfa.isVisible(satir('TR00433001')));
   assert.match(await sayfa.textContent('#sayac'), /1 hayvan/);
 });
 
 test('ayniKupeTekrarEklenmez', async () => {
-  await sayfa.click('#sekme-okut');
   await elleGir('00433001');
   assert.match(await sayfa.textContent('#bildirim'), /zaten okundu/);
-  await sayfa.click('#sekme-liste');
   assert.equal(await sayfa.locator('#liste li').count(), 1);
 });
 
-test('asiIsaretiVeKalicilik', async () => {
-  await sayfa.click('#liste li[data-no="TR00433001"] .asi');
-  assert.match(await sayfa.textContent('#liste li[data-no="TR00433001"] .asi'), /✓/);
+test('yeniOkunanEnUstte', async () => {
+  await elleGir('00433002');
+  assert.deepEqual(await sayfa.locator('#liste li').evaluateAll((l) => l.map((x) => x.dataset.no)), ['TR00433002', 'TR00433001']);
+});
+
+test('asiVeDustuSutunlariVeKalicilik', async () => {
+  assert.equal(await basili(`${satir('TR00433001')} .asi`), 'false');
+  await sayfa.click(`${satir('TR00433001')} .asi`);
+  await sayfa.click(`${satir('TR00433002')} .dustu`);
+  assert.equal(await basili(`${satir('TR00433001')} .asi`), 'true');
+  assert.equal(await basili(`${satir('TR00433002')} .dustu`), 'true');
   await sayfa.reload();
-  await sayfa.click('#sekme-liste');
-  assert.match(await sayfa.textContent('#liste li[data-no="TR00433001"] .asi'), /✓/);
+  assert.equal(await basili(`${satir('TR00433001')} .asi`), 'true');
+  assert.equal(await basili(`${satir('TR00433001')} .dustu`), 'false');
+  assert.equal(await basili(`${satir('TR00433002')} .dustu`), 'true');
+  assert.equal(await basili(`${satir('TR00433002')} .asi`), 'false');
+  // İşaret tekrar dokununca kalkar.
+  await sayfa.click(`${satir('TR00433002')} .dustu`);
+  assert.equal(await basili(`${satir('TR00433002')} .dustu`), 'false');
+  await sayfa.click(`${satir('TR00433002')} .dustu`);
 });
 
-test('excelIndir', async () => {
-  const [indirme] = await Promise.all([sayfa.waitForEvent('download'), sayfa.click('#excel')]);
-  assert.match(indirme.suggestedFilename(), /^kupe-sayim-\d{4}-\d{2}-\d{2}\.csv$/);
-  const icerik = readFileSync(await indirme.path(), 'utf8');
-  assert.ok(icerik.startsWith('﻿No;Aşı'));
-  assert.match(icerik, /TR00433001;Evet/);
-});
-
-test('dusenKupe', async () => {
-  await sayfa.click('#sekme-okut');
-  await elleGir('00433055');
-  await sayfa.click('#son-eski');
-  await sayfa.click('#tus-temizle');
-  for (const r of '00433001') await sayfa.click(`[data-tus="${r}"]`);
-  await sayfa.click('#tus-ekle');
-  // TR00433001 bu sayımda okunmuş bir hayvan: yanlışlıkla silinmesin diye onay sorulur.
-  await sayfa.waitForSelector('#onay[open] >> text=okunmuş bir hayvan');
+test('satirSilmeOnayIsterVeGeriTusuVazgecer', async () => {
+  await elleGir('00433077');
+  await sayfa.click(`${satir('TR00433077')} .sil`);
+  await sayfa.waitForSelector('#onay[open]');
+  await sayfa.keyboard.press('Escape'); // geri tuşu "hayır" sayılır
+  assert.equal(await sayfa.locator('#onay[open]').count(), 0);
+  assert.equal(await sayfa.locator('#liste li').count(), 3);
+  await sayfa.click(`${satir('TR00433077')} .sil`);
   await sayfa.click('#onay-evet');
-  await sayfa.click('#sekme-liste');
-  assert.equal(await sayfa.locator('#liste li').count(), 1);
-  assert.match(await sayfa.textContent('#liste li[data-no="TR00433055"]'), /TR00433001/);
+  assert.equal(await sayfa.locator('#liste li').count(), 2);
+  // Onay kapandıktan sonra elle giriş takılmadan çalışır.
+  await elleGir('00433077');
+  assert.match(await sayfa.textContent('#bildirim'), /TR00433077 eklendi/);
+  await sayfa.click(`${satir('TR00433077')} .sil`);
+  await sayfa.click('#onay-evet');
+});
+
+test('yakinlastirmaDugmeleri', async () => {
+  const buyutme = () => sayfa.evaluate(() => document.querySelector('#video').style.transform);
+  assert.equal(await basili('[data-zoom="1"]'), 'true');
+  await sayfa.click('[data-zoom="2"]');
+  assert.equal(await basili('[data-zoom="2"]'), 'true');
+  assert.equal(await basili('[data-zoom="1"]'), 'false');
+  assert.equal(await buyutme(), 'scale(2)');
+  await sayfa.click('[data-zoom="3"]');
+  assert.equal(await buyutme(), 'scale(3)');
+  await sayfa.click('[data-zoom="1"]');
+  assert.equal(await buyutme(), '');
 });
 
 test('darEkrandaYatayKaydirmaYok', async () => {
-  for (const sekme of ['#sekme-okut', '#sekme-liste']) {
-    await sayfa.click(sekme);
-    assert.ok(await sayfa.evaluate(() => document.documentElement.scrollWidth <= 360), sekme);
-  }
+  assert.ok(await sayfa.evaluate(() => document.documentElement.scrollWidth <= 360), 'okut');
+  // Satırdaki numara ve sütun düğmeleri dar ekrana sığar (işaretliyken de).
+  const tasan = await sayfa.locator('#liste li').evaluateAll((l) => l.filter((x) => x.scrollWidth > x.clientWidth).length);
+  assert.equal(tasan, 0);
+  const kirpik = await sayfa.locator('#liste li .no').evaluateAll((l) => l.filter((x) => x.scrollWidth > x.clientWidth).length);
+  assert.equal(kirpik, 0);
 });
 
-test('onayGeriTusuIleKapaninca', async () => {
-  // Geri tuşu (Esc) onayı "hayır" sayar; sonraki onay ve elle giriş takılmadan çalışır.
-  await sayfa.click('#sekme-liste');
-  await sayfa.click('#yeni-sayim');
-  await sayfa.keyboard.press('Escape');
-  assert.equal(await sayfa.locator('#onay[open]').count(), 0);
-  assert.equal(await sayfa.locator('#liste li').count(), 1);
+test('kaydetSayimiSaklarVeListeyiBosaltir', async () => {
+  await sayfa.click('#kaydet');
+  await sayfa.waitForSelector('#onay[open] >> text=2 hayvan');
+  await sayfa.click('#onay-evet');
+  await sayfa.waitForSelector('#ekran-sayimlar:not([hidden])');
+  assert.equal(await sayfa.locator('#sayimlar > li').count(), 1);
+  assert.match(await sayfa.textContent('#sayimlar > li'), /2 hayvan/);
+  assert.match(await sayfa.textContent('#sayimlar > li'), /1 aşı/);
+  assert.ok(await sayfa.evaluate(() => document.documentElement.scrollWidth <= 360), 'sayımlar');
   await sayfa.click('#sekme-okut');
-  await elleGir('00433077');
-  assert.match(await sayfa.textContent('#bildirim'), /TR00433077 eklendi/);
+  assert.equal(await sayfa.locator('#liste li').count(), 0);
+  assert.match(await sayfa.textContent('#sayac'), /0 hayvan/);
+  assert.ok(await sayfa.isDisabled('#kaydet'));
+  await sayfa.reload();
+  await sayfa.click('#sekme-sayimlar');
+  assert.equal(await sayfa.locator('#sayimlar > li').count(), 1);
+});
+
+test('kayitliSayimExcelIndir', async () => {
+  const [indirme] = await Promise.all([sayfa.waitForEvent('download'), sayfa.click('#sayimlar > li .excel')]);
+  assert.match(indirme.suggestedFilename(), /^kupe-sayim-\d{4}-\d{2}-\d{2}-\d{4}\.csv$/);
+  const icerik = readFileSync(await indirme.path(), 'utf8');
+  assert.ok(icerik.startsWith('﻿No;Aşı;Düşen küpe'));
+  assert.match(icerik, /TR00433001;Evet;Hayır/);
+  assert.match(icerik, /TR00433002;Hayır;Evet/);
+});
+
+test('kayitliSayimSil', async () => {
+  await sayfa.click('#sayimlar > li .sil');
+  await sayfa.click('#onay-evet');
+  assert.equal(await sayfa.locator('#sayimlar > li').count(), 0);
+  assert.ok(await sayfa.isVisible('#sayimlar-bos'));
 });

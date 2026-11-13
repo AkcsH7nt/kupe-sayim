@@ -42,8 +42,9 @@ test('kupeYokkenDugmelerCalisir', async (t) => {
   await sayfa.click('#elle-yaz', { timeout: 5000 });
   await sayfa.waitForSelector('#tus-paneli[open]', { timeout: 5000 });
   await sayfa.click('#tus-iptal', { timeout: 5000 });
-  await sayfa.click('#sekme-liste', { timeout: 5000 });
-  assert.equal(await sayfa.locator('#ekran-liste:not([hidden])').count(), 1);
+  await sayfa.click('[data-zoom="2"]', { timeout: 5000 });
+  await sayfa.click('#sekme-sayimlar', { timeout: 5000 });
+  assert.equal(await sayfa.locator('#ekran-sayimlar:not([hidden])').count(), 1);
 });
 
 test('kupeYokkenCevrimdisiGostergesiGuncellenir', async (t) => {

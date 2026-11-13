@@ -1,20 +1,24 @@
 // Küpe Sayım: ekran mantığı. Okunan küpeler yalnız numara olarak telefonda saklanır.
-import { SayimListesi } from './lib/liste.js';
-import { Okuyucu, cerceveOranlari } from './lib/okuyucu.js';
+// Akış: kamera küpeyi kendisi okur → "doğru mu?" diye sorar → Doğru denince kameranın altındaki listeye düşer.
+import { SayimListesi, SayimArsivi, dusmusMu, ozet, csvMetni, paylasimMetni } from './lib/liste.js';
+import { Okuyucu } from './lib/okuyucu.js';
+import { cerceveKutusu } from './lib/cerceve.js';
 
 const $ = (s) => document.querySelector(s);
 const depo = (() => { try { return window.localStorage; } catch { return null; } })();
 const liste = new SayimListesi(depo);
+const arsiv = new SayimArsivi(depo);
 
 const el = {
   sayac: $('#sayac'), durum: $('#durum'), video: $('#video'), kamera: $('#kamera'), cerceve: $('#cerceve'),
-  kameraAc: $('#kamera-ac'), son: $('#son'), sonNo: $('#son-no'), sonAsi: $('#son-asi'), sonEski: $('#son-eski'),
-  fener: $('#fener'), elleYaz: $('#elle-yaz'), liste: $('#liste'), listeBos: $('#liste-bos'),
-  bildirim: $('#bildirim'), tusPaneli: $('#tus-paneli'), tusBaslik: $('#tus-baslik'), tusDeger: $('#tus-deger'),
-  tusEkle: $('#tus-ekle'), onay: $('#onay'), onayMetin: $('#onay-metin'),
+  kameraAc: $('#kamera-ac'), zoom: $('#zoom'), fener: $('#fener'), elleYaz: $('#elle-yaz'), kaydet: $('#kaydet'),
+  liste: $('#liste'), listeBos: $('#liste-bos'), sayimlar: $('#sayimlar'), sayimlarBos: $('#sayimlar-bos'),
+  bildirim: $('#bildirim'), tusPaneli: $('#tus-paneli'), tusDeger: $('#tus-deger'), tusEkle: $('#tus-ekle'),
+  onay: $('#onay'), onayMetin: $('#onay-metin'), onayNumara: $('#onay-numara'), onayIl: $('#onay-il'),
+  onaySira: $('#onay-sira'), onayNot: $('#onay-not'), onayEvet: $('#onay-evet'), onayHayir: $('#onay-hayir'),
 };
 
-let sonNo = null;
+const iki = (n) => String(n).padStart(2, '0');
 
 // ---------- Geri bildirim ----------
 let sesBaglami = null;
@@ -48,38 +52,37 @@ function bildir(metin, tur = 'basari') {
 
 function durum(metin) { el.durum.textContent = metin; }
 
-// ---------- Liste ve görünüm ----------
+// ---------- Kameranın altındaki liste ----------
+let vurgulanan = null; // bir sonraki çizimde yeşil yanıp sönecek satır
+
 function ciz() {
-  const kayitlar = liste.kayitlar();
+  const kayitlar = liste.yenidenEskiye();
   el.sayac.textContent = `${kayitlar.length} hayvan`;
   el.listeBos.hidden = kayitlar.length > 0;
+  el.kaydet.disabled = kayitlar.length === 0;
   el.liste.replaceChildren(...kayitlar.map((k) => {
     const li = document.createElement('li');
     li.dataset.no = k.no;
     li.innerHTML = `
       <span class="no"></span>
-      <span class="eski"></span>
-      <div class="satir-dugmeler">
-        <button class="asi"></button>
-        <button class="eski-btn">Eski küpe</button>
-        <button class="sil">Sil</button>
-      </div>`;
+      <button class="asi"></button>
+      <button class="dustu"></button>
+      <button class="sil">✕</button>
+      <span class="eski"></span>`;
     li.querySelector('.no').textContent = k.no;
-    const eski = li.querySelector('.eski');
-    if (k.eskiNo) eski.textContent = `Eski küpe ${k.eskiNo} düştü`; else eski.remove();
-    const asi = li.querySelector('.asi');
-    asi.textContent = k.asi ? 'Aşı ✓' : 'Aşı –';
-    asi.classList.toggle('acik', k.asi);
+    const asi = li.querySelector('.asi'), dustu = li.querySelector('.dustu'), eski = li.querySelector('.eski');
+    asi.textContent = k.asi ? 'Aşı ✓' : 'Aşı';
+    asi.setAttribute('aria-pressed', String(Boolean(k.asi)));
+    dustu.textContent = dusmusMu(k) ? 'Düştü ✓' : 'Düştü';
+    dustu.setAttribute('aria-pressed', String(dusmusMu(k)));
+    li.querySelector('.sil').setAttribute('aria-label', `${k.no} sil`);
+    if (k.eskiNo) eski.textContent = `Eski küpe: ${k.eskiNo}`; else eski.remove();
+    if (k.no === vurgulanan) li.classList.add('yeni');
     return li;
   }));
+  if (vurgulanan) el.liste.querySelector('.yeni')?.scrollIntoView({ block: 'nearest' });
+  vurgulanan = null;
 
-  const son = sonNo && liste.kayitlar().find((k) => k.no === sonNo);
-  el.son.hidden = !son;
-  if (son) {
-    el.sonNo.textContent = son.no + (son.eskiNo ? ` (eski ${son.eskiNo})` : '');
-    el.sonAsi.textContent = son.asi ? 'Aşı yapıldı ✓' : 'Aşı yapıldı';
-    el.sonAsi.classList.toggle('acik', son.asi);
-  }
   const uyari = $('#uyari');
   uyari.textContent = liste.sonHata ?? '';
   uyari.hidden = !liste.sonHata;
@@ -90,50 +93,73 @@ el.liste.addEventListener('click', async (o) => {
   if (!li) return;
   const no = li.dataset.no;
   if (o.target.closest('.asi')) liste.asiDegistir(no);
-  else if (o.target.closest('.eski-btn')) tusPaneliAc('eski', no);
+  else if (o.target.closest('.dustu')) liste.dustuDegistir(no);
   else if (o.target.closest('.sil')) {
     if (await onayla(`${no} listeden silinsin mi?`)) liste.sil(no);
-  }
+  } else return;
   ciz();
 });
 
 // ---------- Numara geldiğinde ----------
 async function numaraGeldi(no, kaynak) {
-  if (kaynak !== 'elle' && liste.supheliMi(no)) {
-    if (!(await onayla(`${no} doğru mu?`))) return;
+  const onceki = liste.bak(no);
+  if (onceki === 'zaten') {
+    bip(700, 0.06); titre([60, 60, 60]);
+    bildir(`${no} zaten okundu`, 'uyari');
+    vurgulanan = no; ciz();
+    return;
   }
-  const sonuc = liste.ekle(no, kaynak);
-  if (sonuc.durum === 'eklendi') {
-    sonNo = no;
+  if (onceki === 'haric') {
+    bip(300, 0.25); titre([200, 80, 200]);
+    bildir(`${no}: düşen küpe – sayılmaz`, 'hata');
+    return;
+  }
+  // Kameranın okuduğu her küpe önce sorulur; Doğru denmeden listeye girmez.
+  if (kaynak !== 'elle') {
     bip(); titre(80);
+    const not = liste.supheliMi(no) ? 'Önceki küpelere benzemiyor – dikkatli bakın.' : null;
+    if (!(await onayla('Okunan küpe – doğru mu?', { numara: no, not, evet: 'Doğru', hayir: 'Yanlış' }))) {
+      bildir('Atıldı. Tekrar okutun ya da Elle yaz.', 'uyari');
+      return;
+    }
+  }
+  if (liste.ekle(no, kaynak).durum === 'eklendi') {
+    if (kaynak === 'elle') bip();
+    titre(40);
     el.kamera.classList.add('okundu');
     setTimeout(() => el.kamera.classList.remove('okundu'), 600);
     bildir(`${no} eklendi`, 'basari');
-  } else if (sonuc.durum === 'zaten') {
-    sonNo = no;
-    bip(700, 0.06); titre([60, 60, 60]);
-    bildir(`${no} zaten okundu`, 'uyari');
-  } else {
-    bip(300, 0.25); titre([200, 80, 200]);
-    bildir(`${no}: düşen küpe – sayılmaz`, 'hata');
+    vurgulanan = no;
   }
   ciz();
 }
 
-el.sonAsi.addEventListener('click', () => { if (sonNo) { liste.asiDegistir(sonNo); ciz(); } });
-el.sonEski.addEventListener('click', () => { if (sonNo) tusPaneliAc('eski', sonNo); });
-
-// ---------- Onay diyaloğu ----------
+// ---------- Onay penceresi ----------
 // Okuma yalnız Okut sekmesindeyken ve hiçbir pencere açık değilken çalışır.
 let aktifSekme = 'okut';
 function okumaDurumu() {
   okuyucu.duraklatildi = aktifSekme !== 'okut' || el.onay.open || el.tusPaneli.open;
 }
 
-let onayCevabi = null;
-function onayla(metin) {
+let onayCevabi = null, onayKilidi;
+/**
+ * Evet/hayır sorusu. `numara` verilirse okuma onayıdır: numara büyük yazılır, pencere ekranın altında açılır.
+ * Okuma onayı kendiliğinden (kullanıcı başka bir yere dokunurken) açılabildiği için düğmeleri
+ * ilk anda kilitlidir; yanlışlıkla "Doğru"ya basılmasın.
+ */
+function onayla(metin, { numara = null, not = null, evet = 'Evet', hayir = 'Hayır' } = {}) {
   onayCevabi?.(false); // açık bir soru varsa "hayır" sayılır
   el.onayMetin.textContent = metin;
+  el.onayNumara.hidden = !numara;
+  if (numara) { el.onayIl.textContent = numara.slice(2, 4); el.onaySira.textContent = numara.slice(4); }
+  el.onayNot.hidden = !not;
+  el.onayNot.textContent = not ?? '';
+  el.onayEvet.textContent = evet;
+  el.onayHayir.textContent = hayir;
+  el.onay.classList.toggle('okuma', Boolean(numara));
+  clearTimeout(onayKilidi);
+  el.onayEvet.disabled = el.onayHayir.disabled = Boolean(numara);
+  if (numara) onayKilidi = setTimeout(() => { el.onayEvet.disabled = el.onayHayir.disabled = false; }, 400);
   if (!el.onay.open) el.onay.showModal();
   okumaDurumu();
   return new Promise((coz) => { onayCevabi = coz; });
@@ -145,20 +171,18 @@ function onayBitir(cevap) {
   okumaDurumu();
   coz?.(cevap);
 }
-$('#onay-evet').addEventListener('click', () => onayBitir(true));
-$('#onay-hayir').addEventListener('click', () => onayBitir(false));
+el.onayEvet.addEventListener('click', () => onayBitir(true));
+el.onayHayir.addEventListener('click', () => onayBitir(false));
 // Geri tuşu / Esc ile kapanırsa "hayır" sayılır ve okuma takılı kalmaz.
-el.onay.addEventListener('close', () => onayBitir(false));
+// (Pencere o arada yeni bir soruyla yeniden açıldıysa eski kapanış onu etkilemez.)
+el.onay.addEventListener('close', () => { if (!el.onay.open) onayBitir(false); });
 
-// ---------- Tuş takımı ----------
-let tusModu = 'yeni', tusHedef = null, tusRakamlar = '';
-function tusPaneliAc(mod, hedef = null) {
-  tusModu = mod; tusHedef = hedef;
-  // Kolaylık: il kodunu son kayıttan doldur; kullanıcı yalnız 6 haneyi yazar.
-  const ornek = liste.kayitlar().at(-1)?.no ?? sonNo;
+// ---------- Tuş takımı (elle yazma) ----------
+let tusRakamlar = '';
+function tusPaneliAc() {
+  // Kolaylık: il kodu son okunan küpeden doldurulur; kullanıcı yalnız 6 haneyi yazar.
+  const ornek = liste.yenidenEskiye()[0]?.no;
   tusRakamlar = ornek ? ornek.slice(2, 4) : '';
-  el.tusBaslik.textContent = mod === 'eski' ? `${hedef} için düşen eski küpe` : 'Küpe numarası';
-  el.tusEkle.textContent = mod === 'eski' ? 'Kaydet' : 'Ekle';
   tusGoster();
   el.tusPaneli.showModal();
   okumaDurumu();
@@ -167,58 +191,101 @@ function tusGoster() {
   el.tusDeger.textContent = (tusRakamlar.slice(0, 2) + ' ' + tusRakamlar.slice(2)).trim() || '—';
   el.tusEkle.disabled = tusRakamlar.length !== 8;
 }
-function tusKapat() { el.tusPaneli.close(); }
-
 el.tusPaneli.addEventListener('click', (o) => {
   const tus = o.target.closest('[data-tus]');
   if (tus && tusRakamlar.length < 8) { tusRakamlar += tus.dataset.tus; tusGoster(); }
 });
 $('#tus-sil').addEventListener('click', () => { tusRakamlar = tusRakamlar.slice(0, -1); tusGoster(); });
 $('#tus-temizle').addEventListener('click', () => { tusRakamlar = ''; tusGoster(); });
-$('#tus-iptal').addEventListener('click', tusKapat);
+$('#tus-iptal').addEventListener('click', () => el.tusPaneli.close());
 el.tusPaneli.addEventListener('close', okumaDurumu);
-el.tusEkle.addEventListener('click', async () => {
+el.tusEkle.addEventListener('click', () => {
   const no = 'TR' + tusRakamlar;
-  tusKapat();
-  if (tusModu === 'eski') {
-    if (liste.kayitVarMi(no) && !(await onayla(`${no} bu sayımda okunmuş bir hayvan. Yine de düşen eski küpe olarak sayımdan çıkarılsın mı?`))) return;
-    liste.eskiKupeBagla(tusHedef, no);
-    bildir(`${no} sayımdan çıkarıldı`, 'uyari');
-    ciz();
-  } else {
-    numaraGeldi(no, 'elle');
-  }
+  el.tusPaneli.close();
+  numaraGeldi(no, 'elle');
 });
-el.elleYaz.addEventListener('click', () => tusPaneliAc('yeni'));
+el.elleYaz.addEventListener('click', tusPaneliAc);
 
-// ---------- Liste ekranı düğmeleri ----------
-$('#paylas').addEventListener('click', async () => {
-  const metin = liste.paylasimMetni(new Date());
+// ---------- Kaydet ve kayıtlı sayımlar ----------
+const tarihSaat = (ms) => {
+  const d = new Date(ms);
+  return `${iki(d.getDate())}.${iki(d.getMonth() + 1)}.${d.getFullYear()} ${iki(d.getHours())}:${iki(d.getMinutes())}`;
+};
+
+el.kaydet.addEventListener('click', async () => {
+  const kayitlar = liste.kayitlar();
+  if (!kayitlar.length) return;
+  const soru = `${kayitlar.length} hayvanlık sayım kaydedilsin mi? Liste boşalır; sayım "Sayımlar" bölümünde saklanır.`;
+  if (!(await onayla(soru, { evet: 'Kaydet', hayir: 'Vazgeç' }))) return;
+  // Önce sakla, saklanabildiyse listeyi boşalt: telefon yazamazsa hiçbir küpe kaybolmaz.
+  if (!arsiv.ekle(kayitlar, Date.now())) { bildir('Sayım kaydedilemedi! Liste silinmedi.', 'hata'); return; }
+  liste.temizle();
+  ciz(); sayimlariCiz();
+  sekmeSec('sayimlar');
+  bildir('Sayım kaydedildi', 'basari');
+});
+
+function sayimlariCiz() {
+  const sayimlar = arsiv.hepsi();
+  el.sayimlarBos.hidden = sayimlar.length > 0;
+  el.sayimlar.replaceChildren(...sayimlar.map((s) => {
+    const li = document.createElement('li');
+    li.dataset.id = s.id;
+    li.innerHTML = `
+      <details>
+        <summary><span class="tarih"></span><span class="ozet"></span><span class="ac">Numaraları göster</span></summary>
+        <ol></ol>
+      </details>
+      <div class="satir-dugmeler">
+        <button class="paylas">Paylaş</button>
+        <button class="excel">Excel</button>
+        <button class="sil">Sil</button>
+      </div>`;
+    const o = ozet(s.kayitlar);
+    li.querySelector('.tarih').textContent = tarihSaat(s.zaman);
+    li.querySelector('.ozet').textContent = `${o.toplam} hayvan · ${o.asi} aşı · ${o.dusen} düşen küpe`;
+    li.querySelector('ol').replaceChildren(...paylasimMetni(s.kayitlar).split('\n').slice(1).map((satir) => {
+      const x = document.createElement('li');
+      x.textContent = satir;
+      return x;
+    }));
+    return li;
+  }));
+}
+
+async function sayimPaylas(s) {
+  const metin = paylasimMetni(s.kayitlar, new Date(s.zaman));
   try {
     if (navigator.share) { await navigator.share({ title: 'Küpe sayımı', text: metin }); return; }
   } catch (e) { if (e.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(metin); bildir('Liste panoya kopyalandı'); } catch { bildir('Paylaşılamadı', 'hata'); }
-});
+}
 
-$('#excel').addEventListener('click', () => {
-  const blob = new Blob([liste.csv()], { type: 'text/csv;charset=utf-8' });
-  const a = document.createElement('a');
-  const d = new Date(), iki = (n) => String(n).padStart(2, '0');
+function sayimExcel(s) {
+  const blob = new Blob([csvMetni(s.kayitlar)], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'), d = new Date(s.zaman);
   a.href = URL.createObjectURL(blob);
-  a.download = `kupe-sayim-${d.getFullYear()}-${iki(d.getMonth() + 1)}-${iki(d.getDate())}.csv`;
+  a.download = `kupe-sayim-${d.getFullYear()}-${iki(d.getMonth() + 1)}-${iki(d.getDate())}-${iki(d.getHours())}${iki(d.getMinutes())}.csv`;
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-});
+}
 
-$('#yeni-sayim').addEventListener('click', async () => {
-  if (await onayla('Liste silinip yeni sayım başlasın mı? Önce paylaştığınızdan emin olun.')) {
-    liste.temizle(); sonNo = null; ciz();
+el.sayimlar.addEventListener('click', async (o) => {
+  const s = arsiv.bul(o.target.closest('li[data-id]')?.dataset.id);
+  if (!s) return;
+  if (o.target.closest('.paylas')) sayimPaylas(s);
+  else if (o.target.closest('.excel')) sayimExcel(s);
+  else if (o.target.closest('.sil')) {
+    const soru = `${tarihSaat(s.zaman)} tarihli ${s.kayitlar.length} hayvanlık sayım silinsin mi? Geri alınamaz.`;
+    if (!(await onayla(soru, { evet: 'Sil', hayir: 'Vazgeç' }))) return;
+    if (!arsiv.sil(s.id)) bildir('Silinemedi', 'hata');
+    sayimlariCiz();
   }
 });
 
 // ---------- Sekmeler ----------
 function sekmeSec(ad) {
-  for (const s of ['okut', 'liste']) {
+  for (const s of ['okut', 'sayimlar']) {
     $(`#ekran-${s}`).hidden = s !== ad;
     const d = $(`#sekme-${s}`);
     d.classList.toggle('secili', s === ad);
@@ -228,27 +295,20 @@ function sekmeSec(ad) {
   okumaDurumu();
 }
 $('#sekme-okut').addEventListener('click', () => sekmeSec('okut'));
-$('#sekme-liste').addEventListener('click', () => sekmeSec('liste'));
+$('#sekme-sayimlar').addEventListener('click', () => sekmeSec('sayimlar'));
 
 // ---------- Kamera ----------
 const okuyucu = new Okuyucu({ video: el.video, onNumara: numaraGeldi, onDurum: durum });
 
-function kameraBoyutla() {
-  const vw = el.video.videoWidth, vh = el.video.videoHeight;
-  if (!vw) return;
-  const enGenis = el.kamera.parentElement.clientWidth, enYuksek = window.innerHeight * 0.58;
-  const olcek = Math.min(enGenis / vw, enYuksek / vh);
-  Object.assign(el.kamera.style, { width: `${vw * olcek}px`, height: `${vh * olcek}px`, aspectRatio: 'auto', maxHeight: 'none' });
-  const o = cerceveOranlari(vw, vh);
-  Object.assign(el.cerceve.style, { left: `${o.x * 100}%`, top: `${o.y * 100}%`, width: `${o.w * 100}%`, height: `${o.h * 100}%` });
+// Sarı çerçeve kamera kutusunun ortasında durur; okunan bölge tam olarak bu çerçevenin içidir.
+function cerceveYerlestir() {
+  const W = el.kamera.clientWidth, H = el.kamera.clientHeight;
+  if (!W || !H) return;
+  const k = cerceveKutusu(W, H);
+  Object.assign(el.cerceve.style, { left: `${k.x}px`, top: `${k.y}px`, width: `${k.w}px`, height: `${k.h}px` });
 }
-el.video.addEventListener('loadedmetadata', kameraBoyutla);
-window.addEventListener('resize', kameraBoyutla);
-// Video gelmeden de çerçeve görünsün (3:4 dikey varsayım).
-{
-  const o = cerceveOranlari(3, 4);
-  Object.assign(el.cerceve.style, { left: `${o.x * 100}%`, top: `${o.y * 100}%`, width: `${o.w * 100}%`, height: `${o.h * 100}%` });
-}
+new ResizeObserver(cerceveYerlestir).observe(el.kamera);
+cerceveYerlestir();
 
 // Sayım sırasında ekran kararmasın; telefon kilitlenip açılınca yeniden istenir.
 async function ekranAcikTut() {
@@ -268,6 +328,16 @@ async function kameraBaslat() {
   }
 }
 el.kameraAc.addEventListener('click', kameraBaslat);
+
+// Uzaktaki küpe için kademeli yakınlaştırma: 1×, 2×, 3×.
+el.zoom.addEventListener('click', async (o) => {
+  const secilen = o.target.closest('[data-zoom]');
+  if (!secilen) return;
+  const kat = Number(secilen.dataset.zoom);
+  await okuyucu.yakinlastir(kat);
+  for (const d of el.zoom.querySelectorAll('[data-zoom]')) d.setAttribute('aria-pressed', String(d === secilen));
+  if (okuyucu.calisiyor) durum(kat > 1 ? `${kat}× yakın – telefonu sabit tutun` : 'Küpeyi çerçeveye getirin');
+});
 
 el.fener.addEventListener('click', async () => {
   const acik = el.fener.getAttribute('aria-pressed') !== 'true';
@@ -309,5 +379,6 @@ async function cevrimdisiHazirla() {
 }
 
 ciz();
+sayimlariCiz();
 kameraBaslat();
 cevrimdisiHazirla();

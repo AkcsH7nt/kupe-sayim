@@ -28,7 +28,7 @@ test('cevrimdisiHazirGostergesi', async () => {
 test('internetsizAcilirVeOkur', async () => {
   await baglam.setOffline(true);
   await sayfa.reload();
-  await sayfa.waitForSelector('#sekme-liste');
+  await sayfa.waitForSelector('#sekme-sayimlar');
   const ornek = 'data:image/webp;base64,' + readFileSync('test/tarayici/kupe-ornek.webp').toString('base64');
   const rakam = await sayfa.evaluate(async (src) => {
     const { Okuyucu } = await import('./lib/okuyucu.js');

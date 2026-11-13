@@ -1,5 +1,6 @@
-// Uçtan uca kamera testi: örnek küpe görüntüsü Chrome'a sahte kamera olarak verilir;
-// uygulama hiçbir düğmeye basılmadan küpeyi okuyup listeye eklemeli. ffmpeg yoksa atlanır.
+// Uçtan uca kamera testi: örnek küpe görüntüsü Chrome'a sahte kamera olarak verilir.
+// Uygulama hiçbir düğmeye basılmadan küpeyi okumalı, "doğru mu?" diye sormalı ve
+// ancak Doğru denince listeye eklemeli. ffmpeg yoksa atlanır.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -16,9 +17,9 @@ before(async () => {
   const klasor = mkdtempSync(join(tmpdir(), 'kupe-kamera-'));
   const video = join(klasor, 'kamera.y4m');
   try {
-    // 3. küpenin düz yüzünü (x 505–765, y 385–585) 1280×720 kareye ortala.
+    // 3. küpenin düz yüzü (x 505–765, y 385–585), 1280×720 karenin ortasında çerçeveye sığacak boyda.
     execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-loop', '1', '-i', 'test/tarayici/kupe-ornek.webp',
-      '-vf', 'crop=260:200:505:385,scale=936:720,pad=1280:720:172:0:color=0xd8d8d8',
+      '-vf', 'crop=260:200:505:385,scale=546:420,pad=1280:720:367:150:color=0xd8d8d8',
       '-t', '1', '-r', '10', '-pix_fmt', 'yuv420p', video]);
   } catch { ffmpegYok = true; return; }
   sunucu = await sunucuBaslat(PORT);
@@ -37,10 +38,30 @@ after(async () => {
   sunucu?.close();
 });
 
-test('kameraKupeyiKendiligindenOkur', async (t) => {
+const onayBekle = () => sayfa.waitForSelector('#onay[open] #onay-numara:has-text("TR00433002")', { timeout: 60000 });
+
+test('okurOnaySorarYanlisDeninceEklemez', async (t) => {
   if (ffmpegYok) return t.skip('ffmpeg yok');
-  await sayfa.waitForSelector('#son-no:has-text("TR00433002")', { timeout: 60000 });
-  await sayfa.screenshot({ path: join(tmpdir(), 'kupe-kamera-ekran.png') });
-  await sayfa.click('#sekme-liste');
-  assert.deepEqual(await sayfa.locator('#liste li').evaluateAll((l) => l.map((x) => x.dataset.no)), ['TR00433002']);
+  await onayBekle();
+  assert.equal(await sayfa.locator('#liste li').count(), 0, 'onaylanmadan listeye girmez');
+  await sayfa.screenshot({ path: join(tmpdir(), 'kupe-onay-ekran.png') });
+  await sayfa.click('#onay-hayir');
+  assert.equal(await sayfa.locator('#liste li').count(), 0);
+  // Reddedilen küpe çerçevede dururken aynı soru tekrar tekrar çıkmaz.
+  await sayfa.waitForTimeout(3000);
+  assert.equal(await sayfa.locator('#onay[open]').count(), 0);
+});
+
+test('dogruDeninceKameraninAltindakiListeyeDuser', async (t) => {
+  if (ffmpegYok) return t.skip('ffmpeg yok');
+  await sayfa.reload();
+  await onayBekle();
+  await sayfa.click('#onay-evet');
+  await sayfa.waitForSelector('#liste li[data-no="TR00433002"]');
+  assert.match(await sayfa.textContent('#sayac'), /1 hayvan/);
+  // Okutmaya devam: aynı küpe hâlâ çerçevede, yeniden sormaz, ikinci kez eklemez.
+  await sayfa.waitForTimeout(3000);
+  assert.equal(await sayfa.locator('#onay[open]').count(), 0);
+  assert.equal(await sayfa.locator('#liste li').count(), 1);
+  await sayfa.screenshot({ path: join(tmpdir(), 'kupe-liste-ekran.png') });
 });
