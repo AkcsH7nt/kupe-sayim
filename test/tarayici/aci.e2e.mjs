@@ -31,6 +31,7 @@ for (const aci of [10, -15, 25, 40, -60, 90, 135, -160]) {
     try {
       const baglam = await tarayici.newContext({ viewport: { width: 390, height: 844 } });
       await baglam.grantPermissions(['camera']);
+  await baglam.addInitScript(() => localStorage.setItem('kupe-sayim-otomatik', '1')); // bu test otomatik okumayı sınar
       const sayfa = await baglam.newPage();
       await sayfa.goto(`http://localhost:${PORT}/`);
       await sayfa.waitForSelector('#onay[open]', { timeout: 60000 });

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sariMi, kupeAdaylari } from '../lib/sari.js';
+import { sariMi, kupeAdaylari, kupeDisiniBeyazla } from '../lib/sari.js';
 
 // w×h gri zemin üzerine verilen dikdörtgenleri boyar: [x0, y0, x1, y1, [r, g, b]]
 function resim(w, h, kutular, zemin = [120, 120, 120]) {
@@ -81,4 +81,72 @@ test('ikiKupedeBuyukOlanOnce', () => {
 
 test('sariYoksaAdayYok', () => {
   assert.equal(kupeAdaylari(resim(160, 120, [[50, 30, 99, 69, [200, 170, 100]]]), 160, 120).length, 0);
+});
+
+test('kupeDisiBeyazlanirIciKalir', () => {
+  // 80×60: kahverengi zemin, ortada sarı küpe (10..69 × 10..49), küpenin içinde koyu rakam,
+  // küpenin hemen dışında koyu zemin. Okumadan önce küpe dışı beyaz olmalı, rakam kalmalı.
+  const w = 80, h = 60;
+  const renkli = resim(w, h, [[10, 10, 69, 49, SARI], [30, 20, 34, 39, [20, 20, 20]]], [110, 95, 70]);
+  const siyahBeyaz = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < w * h; i++) {
+    const koyu = renkli[i * 4 + 2] < 100 && renkli[i * 4] < 160; // zemin ve rakam koyu, sarı açık
+    siyahBeyaz.fill(koyu ? 0 : 255, i * 4, i * 4 + 3); siyahBeyaz[i * 4 + 3] = 255;
+  }
+  assert.equal(kupeDisiniBeyazla(renkli, siyahBeyaz, w, h), true);
+  const px = (x, y) => siyahBeyaz[(y * w + x) * 4];
+  assert.equal(px(2, 2), 255);   // zemin beyazlandı
+  assert.equal(px(9, 30), 255);  // küpenin hemen dışı beyazlandı
+  assert.equal(px(32, 30), 0);   // rakam duruyor
+});
+
+test('kupeKenarindakiIncePusDeligiRakamiSizdirmaz', () => {
+  // Küpenin kenarında 2 px'lik koyu çentik rakama değiyor; rakam yine de silinmemeli.
+  const w = 80, h = 60;
+  const renkli = resim(w, h, [[10, 10, 69, 49, SARI], [30, 20, 34, 39, [20, 20, 20]], [30, 10, 31, 20, [20, 20, 20]]], [110, 95, 70]);
+  const siyahBeyaz = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < w * h; i++) {
+    const koyu = renkli[i * 4 + 2] < 100 && renkli[i * 4] < 160;
+    siyahBeyaz.fill(koyu ? 0 : 255, i * 4, i * 4 + 3); siyahBeyaz[i * 4 + 3] = 255;
+  }
+  kupeDisiniBeyazla(renkli, siyahBeyaz, w, h);
+  assert.equal(siyahBeyaz[(30 * w + 32) * 4], 0);
+});
+
+test('sariAzsaDokunulmaz', () => {
+  // Renksiz/karanlık fotoğrafta küpe seçilemez: görüntü olduğu gibi kalır.
+  const w = 40, h = 30;
+  const renkli = resim(w, h, [], [120, 120, 120]);
+  const siyahBeyaz = new Uint8ClampedArray(w * h * 4).fill(0);
+  assert.equal(kupeDisiniBeyazla(renkli, siyahBeyaz, w, h), false);
+  assert.equal(siyahBeyaz[0], 0);
+});
+
+test('kirpintiKenarindaKesilenRakamSilinmez', () => {
+  // Kırpıntı küpeyi kesiyor: kenardaki yarım rakam küçük bir koyu bölge; zemin sanılıp silinirse satır
+  // kısa ama "tam" görünür ve yanlış numara okunur. Kalmalı (okuyucu onu "kenarda kesik" sayar).
+  const w = 80, h = 60;
+  const renkli = resim(w, h, [[0, 10, 69, 49, SARI], [0, 20, 3, 39, [20, 20, 20]]], [110, 95, 70]);
+  const siyahBeyaz = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < w * h; i++) {
+    const koyu = renkli[i * 4 + 2] < 100 && renkli[i * 4] < 160;
+    siyahBeyaz.fill(koyu ? 0 : 255, i * 4, i * 4 + 3); siyahBeyaz[i * 4 + 3] = 255;
+  }
+  kupeDisiniBeyazla(renkli, siyahBeyaz, w, h);
+  assert.equal(siyahBeyaz[(30 * w + 1) * 4], 0);  // yarım rakam duruyor
+  assert.equal(siyahBeyaz[(55 * w + 40) * 4], 255); // zemin beyaz
+});
+
+test('golgeliKupeParcasiZeminSanilmaz', () => {
+  // Küpenin alt yarısı gölgede: sarı değil ama açık renkli, içinde rakam var. Silinmemeli; silinecek
+  // zemin çoğunlukla koyudur (tüy, toprak), gölgeli küpe ise çoğunlukla açık.
+  const w = 80, h = 60;
+  const renkli = resim(w, h, [[10, 10, 69, 49, SARI], [10, 30, 69, 59, [170, 170, 170]], [30, 35, 34, 52, [20, 20, 20]]], [40, 35, 30]);
+  const siyahBeyaz = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < w * h; i++) {
+    const koyu = renkli[i * 4] < 100;
+    siyahBeyaz.fill(koyu ? 0 : 255, i * 4, i * 4 + 3); siyahBeyaz[i * 4 + 3] = 255;
+  }
+  kupeDisiniBeyazla(renkli, siyahBeyaz, w, h);
+  assert.equal(siyahBeyaz[(45 * w + 32) * 4], 0); // gölgedeki rakam duruyor
 });

@@ -31,6 +31,7 @@ async function ac(ad, suzgec) {
   acik.push(tarayici);
   const baglam = await tarayici.newContext({ viewport: { width: 390, height: 844 } });
   await baglam.grantPermissions(['camera']);
+  await baglam.addInitScript(() => localStorage.setItem('kupe-sayim-otomatik', '1')); // bu test otomatik okumayı sınar
   const sayfa = await baglam.newPage();
   await sayfa.goto(`http://localhost:${PORT}/`);
   return sayfa;

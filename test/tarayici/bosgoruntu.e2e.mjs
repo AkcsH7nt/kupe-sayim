@@ -26,6 +26,7 @@ before(async () => {
   });
   const baglam = await tarayici.newContext({ viewport: { width: 390, height: 844 } });
   await baglam.grantPermissions(['camera']);
+  await baglam.addInitScript(() => localStorage.setItem('kupe-sayim-otomatik', '1')); // bu test otomatik okumayı sınar
   sayfa = await baglam.newPage();
   await sayfa.goto(`http://localhost:${PORT}/`);
 });

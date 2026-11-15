@@ -17,7 +17,8 @@ const el = {
   bildirim: $('#bildirim'), tusPaneli: $('#tus-paneli'), tusDeger: $('#tus-deger'), tusEkle: $('#tus-ekle'),
   onay: $('#onay'), onayMetin: $('#onay-metin'), onayNumara: $('#onay-numara'), onayIl: $('#onay-il'),
   onaySira: $('#onay-sira'), onayNot: $('#onay-not'), onayEvet: $('#onay-evet'), onayHayir: $('#onay-hayir'),
-  onayEk: $('#onay-ek'),
+  onayEk: $('#onay-ek'), onayResim: $('#onay-resim'), cek: $('#cek'), otomatik: $('#otomatik'),
+  telefonKamera: $('#telefon-kamera'), fotoDosya: $('#foto-dosya'),
 };
 
 const iki = (n) => String(n).padStart(2, '0');
@@ -118,7 +119,11 @@ function zatenOkundu(no) {
   vurgulanan = no; ciz();
 }
 
-/** ek.ilYok: kamera büyük rakamları okudu ama il kodunu bulamadı; no yalnız "TR" + büyük rakamlar. */
+/**
+ * ek.ilYok: kamera büyük rakamları okudu ama il kodunu bulamadı; no yalnız "TR" + büyük rakamlar.
+ * ek.resim: { kaynak, bolge } — fotoğraftan okunduysa onay penceresinde gösterilecek küpe görüntüsü.
+ * ek.emin: false ise fotoğraftaki iki okuma birbirini tutmadı.
+ */
 async function numaraGeldi(no, kaynak, ek = {}) {
   let ilsiz = Boolean(ek.ilYok);
   if (liste.bak(no) === 'haric') {
@@ -136,10 +141,13 @@ async function numaraGeldi(no, kaynak, ek = {}) {
     bip(); titre(80);
     const il = ilsiz ? sonIl() : null;
     let not = null;
-    if (ilsiz) not = 'İl kodu okunamadı.' + (il ? '' : ' Eksikse Yanlış deyip Elle yazın.');
-    else if (liste.supheliMi(no)) not = 'Önceki küpelere benzemiyor – dikkatli bakın.';
+    const notlar = [];
+    if (ek.emin === false) notlar.push('Emin değilim – resimdeki küpeyle karşılaştırın.');
+    if (ilsiz) notlar.push('İl kodu okunamadı.' + (il ? '' : ' Eksikse Yanlış deyip Elle yazın.'));
+    else if (liste.supheliMi(no)) notlar.push('Önceki küpelere benzemiyor – dikkatli bakın.');
     const cevap = await onayla('Okunan küpe – doğru mu?', {
-      numara: no, ilsiz, not, evet: 'Doğru', hayir: 'Yanlış', ek: il ? `Başına ${il} ekle` : null,
+      numara: no, ilsiz, not: notlar.join(' ') || null, evet: 'Doğru', hayir: 'Yanlış',
+      ek: il ? `Başına ${il} ekle` : null, resim: ek.resim,
     });
     if (!cevap) {
       bildir('Atıldı. Tekrar okutun ya da Elle yaz.', 'uyari');
@@ -167,7 +175,7 @@ async function numaraGeldi(no, kaynak, ek = {}) {
 // Okuma yalnız Okut sekmesindeyken ve hiçbir pencere açık değilken çalışır.
 let aktifSekme = 'okut';
 function okumaDurumu() {
-  okuyucu.duraklatildi = aktifSekme !== 'okut' || el.onay.open || el.tusPaneli.open;
+  okuyucu.duraklatildi = !otomatikAcik || fotoIsleniyor || aktifSekme !== 'okut' || el.onay.open || el.tusPaneli.open;
 }
 
 let onayCevabi = null, onayKilidi;
@@ -176,9 +184,10 @@ let onayCevabi = null, onayKilidi;
  * Okuma onayı kendiliğinden (kullanıcı başka bir yere dokunurken) açılabildiği için düğmeleri
  * ilk anda kilitlidir; yanlışlıkla "Doğru"ya basılmasın.
  */
-function onayla(metin, { numara = null, ilsiz = false, not = null, evet = 'Evet', hayir = 'Hayır', ek = null } = {}) {
+function onayla(metin, { numara = null, ilsiz = false, not = null, evet = 'Evet', hayir = 'Hayır', ek = null, resim = null } = {}) {
   onayCevabi?.(false); // açık bir soru varsa "hayır" sayılır
   el.onayMetin.textContent = metin;
+  resmiGoster(resim);
   el.onayNumara.hidden = !numara;
   if (numara) {
     // İl kodu okunamadıysa numara yalnız "TR" + büyük rakamlardır.
@@ -201,9 +210,19 @@ function onayla(metin, { numara = null, ilsiz = false, not = null, evet = 'Evet'
   okumaDurumu();
   return new Promise((coz) => { onayCevabi = coz; });
 }
+/** Onay penceresinde küpenin fotoğraftaki görüntüsü (yalnız ekranda; pencere kapanınca silinir). */
+function resmiGoster(resim) {
+  const t = el.onayResim;
+  t.hidden = !resim;
+  if (!resim) { t.width = t.height = 0; return; }
+  const { kaynak, bolge: b } = resim, olcek = Math.min(1, 640 / b.w);
+  t.width = Math.round(b.w * olcek); t.height = Math.round(b.h * olcek);
+  t.getContext('2d').drawImage(kaynak, b.x, b.y, b.w, b.h, 0, 0, t.width, t.height);
+}
 function onayBitir(cevap) {
   const coz = onayCevabi;
   onayCevabi = null;
+  resmiGoster(null);
   if (el.onay.open) el.onay.close();
   okumaDurumu();
   coz?.(cevap);
@@ -243,6 +262,96 @@ el.tusEkle.addEventListener('click', () => {
   numaraGeldi(no, 'elle');
 });
 el.elleYaz.addEventListener('click', tusPaneliAc);
+
+// ---------- Fotoğraf çekip okuma ----------
+// Fotoğraf yalnız bellekte işlenir: hiçbir yere kaydedilmez, onaydan sonra bırakılır.
+let fotoIsleniyor = false;
+
+/** Fotoğrafı okur, sonucu sorar. kaynak: tuval ya da resim; g: dikkate alınacak bölge; orta: ekrandaki kılavuz. */
+async function fotoIsle(kaynak, g = null, orta = null) {
+  const sonuc = await okuyucu.fotoOku(kaynak, g, orta);
+  if (sonuc.numara) {
+    await numaraGeldi(sonuc.numara, 'foto', { ilYok: !sonuc.il, emin: sonuc.emin, resim: { kaynak, bolge: sonuc.bolge } });
+    return;
+  }
+  bip(300, 0.2); titre([120, 60, 120]);
+  const elle = await onayla('Okunamadı. Küpeye yaklaşıp, rakamlar net görünecek şekilde tekrar çekin.', {
+    evet: 'Elle yaz', hayir: 'Tekrar çek', resim: { kaynak, bolge: g ?? { x: 0, y: 0, w: kaynak.width, h: kaynak.height } },
+  });
+  if (elle) tusPaneliAc();
+}
+
+async function fotoSureci(is) {
+  if (fotoIsleniyor) return;
+  fotoIsleniyor = true;
+  okumaDurumu();
+  el.cek.disabled = true;
+  el.cek.classList.add('isleniyor');
+  const eskiDurum = el.durum.textContent;
+  durum('Fotoğraf okunuyor…');
+  try {
+    await is();
+  } catch (e) {
+    console.warn(e);
+    bildir('Fotoğraf okunamadı: ' + e.message, 'hata');
+  } finally {
+    fotoIsleniyor = false;
+    el.cek.disabled = false;
+    el.cek.classList.remove('isleniyor');
+    if (el.durum.textContent === 'Fotoğraf okunuyor…') durum(eskiDurum);
+    okumaDurumu();
+  }
+}
+
+el.cek.addEventListener('click', () => fotoSureci(async () => {
+  const anlik = okuyucu.anlikGoruntu();
+  if (!anlik) { bildir('Kamera açık değil – Telefon kamerası ya da Elle yaz kullanın', 'uyari'); return; }
+  el.video.pause(); // görüntü donar: neyin çekildiği görünsün
+  el.kamera.classList.add('okundu');
+  setTimeout(() => el.kamera.classList.remove('okundu'), 300);
+  try {
+    await fotoIsle(anlik.tuval, anlik.gorunen, anlik.orta);
+  } finally {
+    anlik.tuval.width = anlik.tuval.height = 0; // fotoğrafı bellekten bırak
+    el.video.play().catch(() => {});
+  }
+}));
+
+// Telefonun kendi kamerası: flaş ve odak daha iyi; çekilen fotoğraf yalnız burada okunur.
+el.telefonKamera.addEventListener('click', () => el.fotoDosya.click());
+el.fotoDosya.addEventListener('change', () => fotoSureci(async () => {
+  const dosya = el.fotoDosya.files?.[0];
+  el.fotoDosya.value = '';
+  if (!dosya) return;
+  const resim = await createImageBitmap(dosya);
+  // Büyük fotoğraf (12 MP) okuma için küçültülür; ince ayrıntı için uzun kenar 2400 px yeter.
+  const olcek = Math.min(1, 2400 / Math.max(resim.width, resim.height));
+  const tuval = document.createElement('canvas');
+  tuval.width = Math.round(resim.width * olcek); tuval.height = Math.round(resim.height * olcek);
+  tuval.getContext('2d').drawImage(resim, 0, 0, tuval.width, tuval.height);
+  resim.close();
+  try {
+    await fotoIsle(tuval);
+  } finally {
+    tuval.width = tuval.height = 0;
+  }
+}));
+
+// Otomatik okuma: açıkken kamera küpeyi kendisi arar (Çek'e basmadan). Kapalı gelir.
+const OTOMATIK_ANAHTARI = 'kupe-sayim-otomatik';
+let otomatikAcik = (() => { try { return depo?.getItem(OTOMATIK_ANAHTARI) === '1'; } catch { return false; } })();
+function otomatikGoster() {
+  el.otomatik.setAttribute('aria-pressed', String(otomatikAcik));
+  el.otomatik.textContent = otomatikAcik ? 'Otomatik açık' : 'Otomatik';
+  if (!otomatikAcik) hedefGoster(null);
+  okumaDurumu();
+}
+el.otomatik.addEventListener('click', () => {
+  otomatikAcik = !otomatikAcik;
+  try { depo?.setItem(OTOMATIK_ANAHTARI, otomatikAcik ? '1' : '0'); } catch { /* önemli değil */ }
+  otomatikGoster();
+  if (okuyucu.calisiyor) durum(otomatikAcik ? 'Küpeyi kameraya gösterin' : "Küpeyi kadraja alıp Çek'e basın");
+});
 
 // ---------- Kaydet ve kayıtlı sayımlar ----------
 const tarihSaat = (ms) => {
@@ -368,11 +477,12 @@ async function kameraBaslat() {
   el.kameraAc.hidden = true;
   try {
     await okuyucu.baslat();
+    if (!otomatikAcik) durum("Küpeyi kadraja alıp Çek'e basın");
     ekranAcikTut();
   } catch (e) {
     console.warn(e);
     okuyucu.durdur();
-    durum('Kamera açılamadı – Elle yaz kullanın');
+    durum('Kamera açılamadı – Telefon kamerası ya da Elle yaz kullanın');
     el.kameraAc.hidden = false;
   }
 }
@@ -429,5 +539,6 @@ async function cevrimdisiHazirla() {
 
 ciz();
 sayimlariCiz();
+otomatikGoster();
 kameraBaslat();
 cevrimdisiHazirla();

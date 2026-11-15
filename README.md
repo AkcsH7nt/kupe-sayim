@@ -10,10 +10,13 @@ alttaki büyük rakamlar (küpeye göre 6–10 hane), ör. `TR00433001` ya da `T
    Sonra uygulamayı **ana ekrandaki simgeden** aç, kamera iznini ver ve üst köşede **"Çevrimdışı hazır ✓"**
    görünene kadar bekle. (iPhone'da simgeden açılan uygulama Safari'den ayrı hafıza kullanır; ✓'yi simgede görmek şart.)
    Sayımı her zaman **simgeden** yap; tarayıcı sekmesinde başlatılan sayım simgede görünmez.
-2. Kamerayı küpeye tut. Küpeyi belli bir yere getirmek gerekmez: uygulama **sarı küpeyi görüntünün neresinde
-   olursa olsun kendisi bulur**, üstüne sarı kutu çizer ve okur (küpenin tamamı görünmeli; kenarda kesilen küpe okunmaz).
-   Sarı seçilemezse (çok kirli küpe, kötü ışık) küpeyi ortadaki kesikli kılavuza getir.
-   Okuyunca bip sesi gelir ve ekranın altında **"Okunan küpe – doğru mu?"** diye numarayı sorar.
+2. Küpeyi kadraja al ve büyük sarı **Çek** düğmesine bas. Görüntü donar, fotoğraf okunur ve ekranın altında
+   **"Okunan küpe – doğru mu?"** diye numarayı, yanında da **fotoğraftaki küpeyi** gösterir. Cevap verince fotoğraf
+   bellekten silinir; hiçbir yere kaydedilmez. Küpeyi belli bir yere getirmek gerekmez (küpenin tamamı görünmeli).
+   Okunamazsa "Okunamadı" der: **Tekrar çek** ya da **Elle yaz**.
+   - **Telefon kamerası**: telefonun kendi kamera uygulamasını açar (flaş ve odak daha iyi çalışır, karanlıkta işe yarar).
+     Çekilen fotoğraf aynı şekilde okunur. (iPhone bu fotoğrafı galeriye kaydetmez; bazı Android kameraları kaydedebilir.)
+   - **Otomatik** düğmesi açılırsa kamera Çek'e basmadan küpeyi kendisi arayıp okur (kapalı gelir).
    Barkod okunmaz; yalnız rakamlar okunur. Küpelerin düzeni farklı olabildiği için uygulama **büyük rakamları**
    (6–10 hane) her düzende okur; **il kodunu** bulabilirse başına ekler. Bulamazsa "İl kodu okunamadı" yazar ve
    numarayı il kodsuz sorar: **Başına 75 ekle** (son bilinen il kodu, tek dokunuş), **Doğru** (il kodsuz kaydet)

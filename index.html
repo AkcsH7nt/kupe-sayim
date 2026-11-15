@@ -27,7 +27,7 @@
         <video id="video" playsinline muted></video>
         <div id="cerceve" class="cerceve" aria-hidden="true"></div>
         <button id="kamera-ac" class="dugme ikincil kamera-ac" hidden>Kamerayı aç</button>
-        <div class="kamera-alt">
+        <div class="kamera-ust">
           <div id="zoom" class="zoom" role="group" aria-label="Yakınlaştırma">
             <button data-zoom="1" aria-pressed="true">1×</button>
             <button data-zoom="2" aria-pressed="false">2×</button>
@@ -35,17 +35,23 @@
           </div>
           <button id="fener" class="fener" aria-pressed="false">Fener</button>
         </div>
+        <div class="kamera-alt">
+          <button id="otomatik" class="otomatik" aria-pressed="false">Otomatik</button>
+          <button id="cek" class="cek" aria-label="Fotoğraf çek ve oku">Çek</button>
+        </div>
       </div>
 
-      <div class="alt-dugmeler">
+      <div class="alt-dugmeler uclu">
         <button id="elle-yaz" class="dugme ikincil">Elle yaz</button>
+        <button id="telefon-kamera" class="dugme ikincil">Telefon kamerası</button>
         <button id="kaydet" class="dugme ana" disabled>Kaydet</button>
       </div>
+      <input id="foto-dosya" type="file" accept="image/*" capture="environment" hidden>
 
       <p id="tani" class="tani" aria-hidden="true"></p>
 
       <ul id="liste" class="liste" aria-label="Okunan küpeler"></ul>
-      <p id="liste-bos" class="bos">Küpeyi kameraya gösterin. Onayladığınız küpeler burada birikir.</p>
+      <p id="liste-bos" class="bos">Küpeyi kadraja alıp Çek'e basın. Onayladığınız küpeler burada birikir.</p>
     </section>
 
     <section id="ekran-sayimlar" class="ekran" hidden>
@@ -78,6 +84,7 @@
 
   <dialog id="onay" class="panel">
     <p id="onay-metin" class="panel-baslik"></p>
+    <canvas id="onay-resim" class="onay-resim" hidden></canvas>
     <p id="onay-numara" class="onay-numara" hidden><span class="tr">TR</span><span id="onay-il"></span><span id="onay-sira"></span></p>
     <p id="onay-not" class="onay-not" hidden></p>
     <button id="onay-ek" class="dugme ana onay-ek" hidden></button>
